@@ -24,9 +24,13 @@
  */
 package org.graalvm.compiler.core;
 
+import jdk.vm.ci.meta.JavaType;
+import jdk.vm.ci.meta.JavaTypeProfile;
 import org.graalvm.compiler.code.CompilationResult;
 import org.graalvm.compiler.core.common.PermanentBailoutException;
 import org.graalvm.compiler.core.common.RetryableBailoutException;
+import org.graalvm.compiler.core.common.type.StampFactory;
+import org.graalvm.compiler.core.common.type.StampPair;
 import org.graalvm.compiler.core.common.util.CompilationAlarm;
 import org.graalvm.compiler.core.target.Backend;
 import org.graalvm.compiler.debug.DebugCloseable;
@@ -34,9 +38,23 @@ import org.graalvm.compiler.debug.DebugContext;
 import org.graalvm.compiler.debug.DebugContext.CompilerPhaseScope;
 import org.graalvm.compiler.debug.MethodFilter;
 import org.graalvm.compiler.debug.TimerKey;
+import org.graalvm.compiler.graph.Node;
+import org.graalvm.compiler.graph.iterators.NodeIterable;
 import org.graalvm.compiler.lir.asm.CompilationResultBuilderFactory;
 import org.graalvm.compiler.lir.phases.LIRSuites;
+import org.graalvm.compiler.nodes.AbstractBeginNode;
+import org.graalvm.compiler.nodes.BeginNode;
+import org.graalvm.compiler.nodes.CallTargetNode;
+import org.graalvm.compiler.nodes.ConstantNode;
+import org.graalvm.compiler.nodes.FixedNode;
+import org.graalvm.compiler.nodes.IfNode;
+import org.graalvm.compiler.nodes.InvokeNode;
+import org.graalvm.compiler.nodes.LoopBeginNode;
+import org.graalvm.compiler.nodes.LoopEndNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
+import org.graalvm.compiler.nodes.ValueNode;
+import org.graalvm.compiler.nodes.java.ArrayLengthNode;
+import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
 import org.graalvm.compiler.phases.OptimisticOptimizations;
 import org.graalvm.compiler.phases.PhaseSuite;
 import org.graalvm.compiler.phases.common.DeadCodeEliminationPhase;
@@ -76,9 +94,9 @@ public class GraalCompiler {
         public final boolean verifySourcePositions;
 
         /**
-         * @param graph the graph to be compiled
+         * @param graph              the graph to be compiled
          * @param installedCodeOwner the method the compiled code will be associated with once
-         *            installed. This argument can be null.
+         *                           installed. This argument can be null.
          * @param providers
          * @param backend
          * @param graphBuilderSuite
@@ -90,8 +108,8 @@ public class GraalCompiler {
          * @param factory
          */
         public Request(StructuredGraph graph, ResolvedJavaMethod installedCodeOwner, Providers providers, Backend backend, PhaseSuite<HighTierContext> graphBuilderSuite,
-                        OptimisticOptimizations optimisticOpts, ProfilingInfo profilingInfo, Suites suites, LIRSuites lirSuites, T compilationResult, CompilationResultBuilderFactory factory,
-                        boolean verifySourcePositions) {
+                       OptimisticOptimizations optimisticOpts, ProfilingInfo profilingInfo, Suites suites, LIRSuites lirSuites, T compilationResult, CompilationResultBuilderFactory factory,
+                       boolean verifySourcePositions) {
             this.graph = graph;
             this.installedCodeOwner = installedCodeOwner;
             this.providers = providers;
@@ -119,16 +137,16 @@ public class GraalCompiler {
     /**
      * Requests compilation of a given graph.
      *
-     * @param graph the graph to be compiled
+     * @param graph              the graph to be compiled
      * @param installedCodeOwner the method the compiled code will be associated with once
-     *            installed. This argument can be null.
+     *                           installed. This argument can be null.
      * @return the result of the compilation
      */
     public static <T extends CompilationResult> T compileGraph(StructuredGraph graph, ResolvedJavaMethod installedCodeOwner, Providers providers, Backend backend,
-                    PhaseSuite<HighTierContext> graphBuilderSuite, OptimisticOptimizations optimisticOpts, ProfilingInfo profilingInfo, Suites suites, LIRSuites lirSuites, T compilationResult,
-                    CompilationResultBuilderFactory factory, boolean verifySourcePositions) {
+                                                               PhaseSuite<HighTierContext> graphBuilderSuite, OptimisticOptimizations optimisticOpts, ProfilingInfo profilingInfo, Suites suites, LIRSuites lirSuites, T compilationResult,
+                                                               CompilationResultBuilderFactory factory, boolean verifySourcePositions) {
         return compile(new Request<>(graph, installedCodeOwner, providers, backend, graphBuilderSuite, optimisticOpts, profilingInfo, suites, lirSuites, compilationResult, factory,
-                        verifySourcePositions));
+                verifySourcePositions));
     }
 
     /**
@@ -161,7 +179,7 @@ public class GraalCompiler {
      *
      * @param graph a graph currently being compiled
      * @throws RuntimeException if the value of {@link GraalCompilerOptions#CrashAt} matches
-     *             {@code graph.method()} or {@code graph.name}
+     *                          {@code graph.method()} or {@code graph.name}
      */
     private static void checkForRequestedCrash(StructuredGraph graph) {
         String value = GraalCompilerOptions.CrashAt.getValue(graph.getOptions());
@@ -215,7 +233,7 @@ public class GraalCompiler {
      */
     @SuppressWarnings("try")
     public static void emitFrontEnd(Providers providers, TargetProvider target, StructuredGraph graph, PhaseSuite<HighTierContext> graphBuilderSuite, OptimisticOptimizations optimisticOpts,
-                    ProfilingInfo profilingInfo, Suites suites) {
+                                    ProfilingInfo profilingInfo, Suites suites) {
         DebugContext debug = graph.getDebug();
         try (DebugContext.Scope s = debug.scope("FrontEnd"); DebugCloseable a = FrontEnd.start(debug)) {
             HighTierContext highTierContext = new HighTierContext(providers, graphBuilderSuite, optimisticOpts);
@@ -227,6 +245,36 @@ public class GraalCompiler {
                 }
             } else {
                 debug.dump(DebugContext.INFO_LEVEL, graph, "initial state");
+            }
+
+            // Iterate through the nodes
+            NodeIterable<Node> nod = graph.getNodes();
+            for (Node n : nod) {
+                // Check the class of the iterating node
+                if (n.getClass().getName() == LoopBeginNode.class.getName()) {
+
+
+//                    MethodCallTargetNode callTarget = graph.add(new MethodCallTargetNode(CallTargetNode.InvokeKind.Static, initCounter.getMethod(), new ValueNode[0], StampFactory.forVoid(), null));
+//                    InvokeNode invoke = graph.add(new InvokeNode(callTarget, 0));
+//                    invoke.setStateAfter(graph.start().stateAfter());
+//                    FixedNode myNode = graph.add(print);
+//                    System.out.println("Saw");
+                    LoopBeginNode LBeg =  (LoopBeginNode) n;
+                    if (LBeg.next().getClass().getName() == ArrayLengthNode.class.getName()){
+                        ArrayLengthNode ALen = (ArrayLengthNode) LBeg.next();
+                        if (ALen.next().getClass().getName() == IfNode.class.getName()){
+                            IfNode IfofFor = (IfNode) ALen.next();
+                            if(IfofFor.trueSuccessor().getClass().getName() == BeginNode.class.getName()){
+                                System.out.println("Paei");
+                            }
+                        }
+
+                    }
+//                    AbstractBeginNode x = testNode.falseSuccessor();
+//                    testNode.setFalseSuccessor(testNode.trueSuccessor());
+//                    testNode.setTrueSuccessor(x);
+//                    System.out.println(x);
+                }
             }
 
             suites.getHighTier().apply(graph, highTierContext);
