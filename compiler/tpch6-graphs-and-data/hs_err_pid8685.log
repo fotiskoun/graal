@@ -1,0 +1,838 @@
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  Internal Error (jvmciRuntime.cpp:1171), pid=8685, tid=0x00007faf3b7f4700
+#  fatal error: Fatal exception in JVMCI: Exception during JVMCI compiler initialization
+#
+# JRE version: OpenJDK Runtime Environment (8.0_272-b10) (build 1.8.0_272-b10)
+# Java VM: OpenJDK 64-Bit Server VM Graal:compiler_565c2b3f39ab117249f1369bb74e7c461a3ddd19 (25.272-b10-jvmci-21.0-b03 mixed mode linux-amd64 compressed oops)
+# Failed to write core dump. Core dumps have been disabled. To enable core dumping, try "ulimit -c unlimited" before starting Java again
+#
+# If you would like to submit a bug report, please visit:
+#   https://github.com/oracle/graal/issues
+#
+
+---------------  T H R E A D  ---------------
+
+Current thread (0x00007faf740e3000):  JavaThread "JVMCI CompilerThread0" daemon [_thread_in_vm, id=8704, stack(0x00007faf3b6f5000,0x00007faf3b7f5000)]
+
+Stack: [0x00007faf3b6f5000,0x00007faf3b7f5000],  sp=0x00007faf3b7f36e0,  free space=1017k
+Native frames: (J=compiled Java code, j=interpreted, Vv=VM code, C=native code)
+V  [libjvm.so+0xbe5c1f]  VMError::report_and_die()+0x2af
+V  [libjvm.so+0x4fb584]  report_fatal(char const*, int, char const*)+0x54
+V  [libjvm.so+0x7f5025]  JVMCIRuntime::fatal_exception(JVMCIEnv*, char const*)+0xa5
+V  [libjvm.so+0x7f8e47]  JVMCIRuntime::compile_method(JVMCIEnv*, JVMCICompiler*, methodHandle const&, int)+0x2a7
+V  [libjvm.so+0x4a6250]  CompileBroker::invoke_compiler_on_method(CompileTask*)+0x1a80
+V  [libjvm.so+0x4a74f8]  CompileBroker::compiler_thread_loop()+0x5c8
+V  [libjvm.so+0xb8322b]  JavaThread::thread_main_inner()+0xdb
+V  [libjvm.so+0xb834f9]  JavaThread::run()+0x299
+V  [libjvm.so+0xa11fb2]  java_start(Thread*)+0x102
+C  [libpthread.so.0+0x9609]  start_thread+0xd9
+
+
+Current CompileTask:
+JVMCI:   4588  676       4       java.util.regex.Matcher::search (109 bytes)
+
+
+---------------  P R O C E S S  ---------------
+
+Java Threads: ( => current thread )
+  0x00007faf14001800 JavaThread "JDWP Transport Listener: dt_socket" daemon [_thread_in_native, id=8712, stack(0x00007faf3b7f5000,0x00007faf3b8f6000)]
+  0x00007faf10234000 JavaThread "HotSpotGraalManagement Bean Registration" daemon [_thread_blocked, id=8710, stack(0x00007faf3ac48000,0x00007faf3ad49000)]
+  0x00007faf740ed800 JavaThread "Service Thread" daemon [_thread_blocked, id=8708, stack(0x00007faf3b2f0000,0x00007faf3b3f1000)]
+  0x00007faf740e9800 JavaThread "C1 CompilerThread3" daemon [_thread_in_vm, id=8707, stack(0x00007faf3b3f2000,0x00007faf3b4f2000)]
+  0x00007faf740e7800 JavaThread "JVMCI CompilerThread2" daemon [_thread_blocked, id=8706, stack(0x00007faf3b4f3000,0x00007faf3b5f3000)]
+  0x00007faf740e5800 JavaThread "JVMCI CompilerThread1" daemon [_thread_in_Java, id=8705, stack(0x00007faf3b5f4000,0x00007faf3b6f4000)]
+=>0x00007faf740e3000 JavaThread "JVMCI CompilerThread0" daemon [_thread_in_vm, id=8704, stack(0x00007faf3b6f5000,0x00007faf3b7f5000)]
+  0x00007faf740df000 JavaThread "JDWP Event Helper Thread" daemon [_thread_blocked, id=8700, stack(0x00007faf3b8f6000,0x00007faf3b9f7000)]
+  0x00007faf740c4800 JavaThread "Signal Dispatcher" daemon [_thread_blocked, id=8698, stack(0x00007faf3bcfd000,0x00007faf3bdfe000)]
+  0x00007faf74094800 JavaThread "Finalizer" daemon [_thread_blocked, id=8697, stack(0x00007faf3bdfe000,0x00007faf3beff000)]
+  0x00007faf74090000 JavaThread "Reference Handler" daemon [_thread_blocked, id=8696, stack(0x00007faf3beff000,0x00007faf3c000000)]
+  0x00007faf7400e800 JavaThread "main" [_thread_in_Java, id=8686, stack(0x00007faf79610000,0x00007faf79710000)]
+
+Other Threads:
+  0x00007faf74088000 VMThread [stack: 0x00007faf4006c000,0x00007faf4016c000] [id=8695]
+  0x00007faf740f3000 WatcherThread [stack: 0x00007faf3b1f0000,0x00007faf3b2f0000] [id=8709]
+
+VM state:not at safepoint (normal execution)
+
+VM Mutex/Monitor currently owned by a thread: None
+
+heap address: 0x00000006cae00000, size: 3922 MB, Compressed Oops mode: Zero based, Oop shift amount: 3
+Narrow klass base: 0x0000000000000000, Narrow klass shift: 3
+Compressed class space size: 1073741824 Address: 0x00000007c0000000
+
+Heap:
+ PSYoungGen      total 73728K, used 5281K [0x000000076e500000, 0x0000000777500000, 0x00000007c0000000)
+  eden space 63488K, 8% used [0x000000076e500000,0x000000076ea28628,0x0000000772300000)
+  from space 10240K, 0% used [0x0000000772d00000,0x0000000772d00000,0x0000000773700000)
+  to   space 10240K, 0% used [0x0000000772300000,0x0000000772300000,0x0000000772d00000)
+ ParOldGen       total 78848K, used 6645K [0x00000006cae00000, 0x00000006cfb00000, 0x000000076e500000)
+  object space 78848K, 8% used [0x00000006cae00000,0x00000006cb47d768,0x00000006cfb00000)
+ Metaspace       used 20581K, capacity 21040K, committed 21504K, reserved 1069056K
+  class space    used 2640K, capacity 2749K, committed 2816K, reserved 1048576K
+
+Card table byte_map: [0x00007faf5f856000,0x00007faf60000000] byte_map_base: 0x00007faf5c1ff000
+
+Marking Bits: (ParMarkBitMap*) 0x00007faf7a9745e0
+ Begin Bits: [0x00007faf40570000, 0x00007faf442b8000)
+ End Bits:   [0x00007faf442b8000, 0x00007faf48000000)
+
+Polling page: 0x00007faf7ae18000
+
+CodeCache: size=327680Kb used=5118Kb max_used=5118Kb free=322561Kb
+ bounds [0x00007faf60000000, 0x00007faf61000000, 0x00007faf74000000]
+ total_blobs=2402 nmethods=1933 adapters=404
+ compilation: enabled
+
+JVMCI Events (7 events):
+Event: 0.008 Thread 0x00007faf7400e800 created new JVMCI runtime 0 (0x00007faf74065e70)
+Event: 2.069 Thread 0x00007faf740e3000 initializing JVMCI runtime 0
+Event: 2.069 Thread 0x00007faf740e7800 waiting for initialization of JVMCI runtime 0
+Event: 2.071 Thread 0x00007faf740e5800 waiting for initialization of JVMCI runtime 0
+Event: 2.100 Thread 0x00007faf740e3000 initialized JVMCI runtime 0
+Event: 2.100 Thread 0x00007faf740e7800 done waiting for initialization of JVMCI runtime 0
+Event: 2.100 Thread 0x00007faf740e5800 done waiting for initialization of JVMCI runtime 0
+
+Compilation events (10 events):
+Event: 4.586 Thread 0x00007faf740e9800 nmethod 1994 0x00007faf604fb550 code [0x00007faf604fb6c0, 0x00007faf604fb7f0]
+Event: 4.586 Thread 0x00007faf740e9800 1995       1       org.graalvm.compiler.graph.NodeList::access$400 (5 bytes)
+Event: 4.586 Thread 0x00007faf740e9800 nmethod 1995 0x00007faf604fb890 code [0x00007faf604fba00, 0x00007faf604fbaf0]
+Event: 4.586 Thread 0x00007faf740e9800 2055       1       org.graalvm.compiler.graph.NodeList$NodeListIterator::next (5 bytes)
+Event: 4.586 Thread 0x00007faf740e9800 nmethod 2055 0x00007faf604fbb90 code [0x00007faf604fbd00, 0x00007faf604fbe28]
+Event: 4.586 Thread 0x00007faf740e9800 2158       3       java.lang.String::compareTo (9 bytes)
+Event: 4.586 Thread 0x00007faf740e9800 nmethod 2158 0x00007faf604fbe90 code [0x00007faf604fc000, 0x00007faf604fc3e8]
+Event: 4.586 Thread 0x00007faf740e9800 2056       1       org.graalvm.compiler.graph.NodeList$NodeListIterator::next (48 bytes)
+Event: 4.586 Thread 0x00007faf740e9800 nmethod 2056 0x00007faf604fc490 code [0x00007faf604fc600, 0x00007faf604fc750]
+Event: 4.586 Thread 0x00007faf740e9800 2016       1       org.graalvm.compiler.graph.NodeInputList::update (10 bytes)
+
+GC Heap History (10 events):
+Event: 2.341 GC heap before
+{Heap before GC invocations=1 (full 0):
+ PSYoungGen      total 73728K, used 63488K [0x000000076e500000, 0x0000000773700000, 0x00000007c0000000)
+  eden space 63488K, 100% used [0x000000076e500000,0x0000000772300000,0x0000000772300000)
+  from space 10240K, 0% used [0x0000000772d00000,0x0000000772d00000,0x0000000773700000)
+  to   space 10240K, 0% used [0x0000000772300000,0x0000000772300000,0x0000000772d00000)
+ ParOldGen       total 167936K, used 0K [0x00000006cae00000, 0x00000006d5200000, 0x000000076e500000)
+  object space 167936K, 0% used [0x00000006cae00000,0x00000006cae00000,0x00000006d5200000)
+ Metaspace       used 10062K, capacity 10130K, committed 10368K, reserved 1058816K
+  class space    used 1100K, capacity 1138K, committed 1152K, reserved 1048576K
+Event: 2.345 GC heap after
+Heap after GC invocations=1 (full 0):
+ PSYoungGen      total 73728K, used 4211K [0x000000076e500000, 0x0000000773700000, 0x00000007c0000000)
+  eden space 63488K, 0% used [0x000000076e500000,0x000000076e500000,0x0000000772300000)
+  from space 10240K, 41% used [0x0000000772300000,0x000000077271cc80,0x0000000772d00000)
+  to   space 10240K, 0% used [0x0000000772d00000,0x0000000772d00000,0x0000000773700000)
+ ParOldGen       total 167936K, used 16K [0x00000006cae00000, 0x00000006d5200000, 0x000000076e500000)
+  object space 167936K, 0% used [0x00000006cae00000,0x00000006cae04000,0x00000006d5200000)
+ Metaspace       used 10062K, capacity 10130K, committed 10368K, reserved 1058816K
+  class space    used 1100K, capacity 1138K, committed 1152K, reserved 1048576K
+}
+Event: 2.543 GC heap before
+{Heap before GC invocations=2 (full 0):
+ PSYoungGen      total 73728K, used 67699K [0x000000076e500000, 0x0000000773700000, 0x00000007c0000000)
+  eden space 63488K, 100% used [0x000000076e500000,0x0000000772300000,0x0000000772300000)
+  from space 10240K, 41% used [0x0000000772300000,0x000000077271cc80,0x0000000772d00000)
+  to   space 10240K, 0% used [0x0000000772d00000,0x0000000772d00000,0x0000000773700000)
+ ParOldGen       total 167936K, used 16K [0x00000006cae00000, 0x00000006d5200000, 0x000000076e500000)
+  object space 167936K, 0% used [0x00000006cae00000,0x00000006cae04000,0x00000006d5200000)
+ Metaspace       used 14717K, capacity 14944K, committed 15104K, reserved 1062912K
+  class space    used 1850K, capacity 1959K, committed 2048K, reserved 1048576K
+Event: 2.546 GC heap after
+Heap after GC invocations=2 (full 0):
+ PSYoungGen      total 73728K, used 5052K [0x000000076e500000, 0x0000000773700000, 0x00000007c0000000)
+  eden space 63488K, 0% used [0x000000076e500000,0x000000076e500000,0x0000000772300000)
+  from space 10240K, 49% used [0x0000000772d00000,0x00000007731ef348,0x0000000773700000)
+  to   space 10240K, 0% used [0x0000000772300000,0x0000000772300000,0x0000000772d00000)
+ ParOldGen       total 167936K, used 24K [0x00000006cae00000, 0x00000006d5200000, 0x000000076e500000)
+  object space 167936K, 0% used [0x00000006cae00000,0x00000006cae06000,0x00000006d5200000)
+ Metaspace       used 14717K, capacity 14944K, committed 15104K, reserved 1062912K
+  class space    used 1850K, capacity 1959K, committed 2048K, reserved 1048576K
+}
+Event: 4.502 GC heap before
+{Heap before GC invocations=3 (full 0):
+ PSYoungGen      total 73728K, used 68540K [0x000000076e500000, 0x0000000773700000, 0x00000007c0000000)
+  eden space 63488K, 100% used [0x000000076e500000,0x0000000772300000,0x0000000772300000)
+  from space 10240K, 49% used [0x0000000772d00000,0x00000007731ef348,0x0000000773700000)
+  to   space 10240K, 0% used [0x0000000772300000,0x0000000772300000,0x0000000772d00000)
+ ParOldGen       total 167936K, used 24K [0x00000006cae00000, 0x00000006d5200000, 0x000000076e500000)
+  object space 167936K, 0% used [0x00000006cae00000,0x00000006cae06000,0x00000006d5200000)
+ Metaspace       used 19987K, capacity 20548K, committed 20736K, reserved 1067008K
+  class space    used 2568K, capacity 2731K, committed 2816K, reserved 1048576K
+Event: 4.507 GC heap after
+Heap after GC invocations=3 (full 0):
+ PSYoungGen      total 73728K, used 6579K [0x000000076e500000, 0x0000000773700000, 0x00000007c0000000)
+  eden space 63488K, 0% used [0x000000076e500000,0x000000076e500000,0x0000000772300000)
+  from space 10240K, 64% used [0x0000000772300000,0x000000077296cca0,0x0000000772d00000)
+  to   space 10240K, 0% used [0x0000000772d00000,0x0000000772d00000,0x0000000773700000)
+ ParOldGen       total 167936K, used 32K [0x00000006cae00000, 0x00000006d5200000, 0x000000076e500000)
+  object space 167936K, 0% used [0x00000006cae00000,0x00000006cae08000,0x00000006d5200000)
+ Metaspace       used 19987K, capacity 20548K, committed 20736K, reserved 1067008K
+  class space    used 2568K, capacity 2731K, committed 2816K, reserved 1048576K
+}
+Event: 4.547 GC heap before
+{Heap before GC invocations=4 (full 0):
+ PSYoungGen      total 73728K, used 16780K [0x000000076e500000, 0x0000000773700000, 0x00000007c0000000)
+  eden space 63488K, 16% used [0x000000076e500000,0x000000076eef66b0,0x0000000772300000)
+  from space 10240K, 64% used [0x0000000772300000,0x000000077296cca0,0x0000000772d00000)
+  to   space 10240K, 0% used [0x0000000772d00000,0x0000000772d00000,0x0000000773700000)
+ ParOldGen       total 167936K, used 32K [0x00000006cae00000, 0x00000006d5200000, 0x000000076e500000)
+  object space 167936K, 0% used [0x00000006cae00000,0x00000006cae08000,0x00000006d5200000)
+ Metaspace       used 20612K, capacity 21184K, committed 21248K, reserved 1067008K
+  class space    used 2655K, capacity 2807K, committed 2816K, reserved 1048576K
+Event: 4.553 GC heap after
+Heap after GC invocations=4 (full 0):
+ PSYoungGen      total 73728K, used 6771K [0x000000076e500000, 0x0000000777500000, 0x00000007c0000000)
+  eden space 63488K, 0% used [0x000000076e500000,0x000000076e500000,0x0000000772300000)
+  from space 10240K, 66% used [0x0000000772d00000,0x000000077339cca0,0x0000000773700000)
+  to   space 10240K, 0% used [0x0000000772300000,0x0000000772300000,0x0000000772d00000)
+ ParOldGen       total 167936K, used 40K [0x00000006cae00000, 0x00000006d5200000, 0x000000076e500000)
+  object space 167936K, 0% used [0x00000006cae00000,0x00000006cae0a000,0x00000006d5200000)
+ Metaspace       used 20612K, capacity 21184K, committed 21248K, reserved 1067008K
+  class space    used 2655K, capacity 2807K, committed 2816K, reserved 1048576K
+}
+Event: 4.553 GC heap before
+{Heap before GC invocations=5 (full 1):
+ PSYoungGen      total 73728K, used 6771K [0x000000076e500000, 0x0000000777500000, 0x00000007c0000000)
+  eden space 63488K, 0% used [0x000000076e500000,0x000000076e500000,0x0000000772300000)
+  from space 10240K, 66% used [0x0000000772d00000,0x000000077339cca0,0x0000000773700000)
+  to   space 10240K, 0% used [0x0000000772300000,0x0000000772300000,0x0000000772d00000)
+ ParOldGen       total 167936K, used 40K [0x00000006cae00000, 0x00000006d5200000, 0x000000076e500000)
+  object space 167936K, 0% used [0x00000006cae00000,0x00000006cae0a000,0x00000006d5200000)
+ Metaspace       used 20612K, capacity 21184K, committed 21248K, reserved 1067008K
+  class space    used 2655K, capacity 2807K, committed 2816K, reserved 1048576K
+Event: 4.575 GC heap after
+Heap after GC invocations=5 (full 1):
+ PSYoungGen      total 73728K, used 0K [0x000000076e500000, 0x0000000777500000, 0x00000007c0000000)
+  eden space 63488K, 0% used [0x000000076e500000,0x000000076e500000,0x0000000772300000)
+  from space 10240K, 0% used [0x0000000772d00000,0x0000000772d00000,0x0000000773700000)
+  to   space 10240K, 0% used [0x0000000772300000,0x0000000772300000,0x0000000772d00000)
+ ParOldGen       total 78848K, used 6645K [0x00000006cae00000, 0x00000006cfb00000, 0x000000076e500000)
+  object space 78848K, 8% used [0x00000006cae00000,0x00000006cb47d768,0x00000006cfb00000)
+ Metaspace       used 20522K, capacity 20976K, committed 21248K, reserved 1067008K
+  class space    used 2623K, capacity 2749K, committed 2816K, reserved 1048576K
+}
+
+Class unloading (10 events):
+Event: 4.556 Thread 0x00007faf74088000 unloaded java.lang.invoke.LambdaForm$BMH/697054135 0x00000007c01b7028
+Event: 4.556 Thread 0x00007faf74088000 unloaded java.lang.invoke.LambdaForm$BMH/235372471 0x00000007c01b6c28
+Event: 4.556 Thread 0x00007faf74088000 unloaded java.lang.invoke.LambdaForm$BMH/507493030 0x00000007c01b6428
+Event: 4.556 Thread 0x00007faf74088000 unloaded java.lang.invoke.LambdaForm$BMH/2130971462 0x00000007c01b6028
+Event: 4.556 Thread 0x00007faf74088000 unloaded java.lang.invoke.LambdaForm$MH/649076869 0x00000007c01b5c28
+Event: 4.556 Thread 0x00007faf74088000 unloaded java.lang.invoke.LambdaForm$MH/1546025451 0x00000007c01b5828
+Event: 4.556 Thread 0x00007faf74088000 unloaded java.lang.invoke.LambdaForm$DMH/1120139708 0x00000007c01a2428
+Event: 4.556 Thread 0x00007faf74088000 unloaded java.lang.invoke.LambdaForm$DMH/326582590 0x00000007c01a1c28
+Event: 4.556 Thread 0x00007faf74088000 unloaded java.lang.invoke.LambdaForm$DMH/786193527 0x00000007c01a1828
+Event: 4.556 Thread 0x00007faf74088000 unloaded java.lang.invoke.LambdaForm$DMH/1012072095 0x00000007c01a1028
+
+Deoptimization events (0 events):
+No events
+
+Classes redefined (0 events):
+No events
+
+Internal exceptions (10 events):
+Event: 4.488 Thread 0x00007faf740e7800 Exception <a 'sun/nio/fs/UnixException'> (0x0000000771eceb60) thrown at [/b/b/e/main/graal-jvmci-8/src/share/vm/prims/jni.cpp, line 715]
+Event: 4.489 Thread 0x00007faf740e7800 Exception <a 'sun/nio/fs/UnixException'> (0x0000000771edcdd0) thrown at [/b/b/e/main/graal-jvmci-8/src/share/vm/prims/jni.cpp, line 715]
+Event: 4.522 Thread 0x00007faf740e3000 Exception <a 'jdk/vm/ci/common/JVMCIError'> (0x000000076e62bf58) thrown at [/b/b/e/main/graal-jvmci-8/src/share/vm/oops/instanceKlass.cpp, line 967]
+Event: 4.539 Thread 0x00007faf740e5800 Exception <a 'java/lang/NullPointerException'> (0x000000076ebffa78) thrown at [/b/b/e/main/graal-jvmci-8/src/share/vm/interpreter/linkResolver.cpp, line 1166]
+Event: 4.539 Thread 0x00007faf740e5800 Exception <a 'java/lang/NullPointerException'> (0x000000076ec004a8) thrown at [/b/b/e/main/graal-jvmci-8/src/share/vm/interpreter/linkResolver.cpp, line 1166]
+Event: 4.576 Thread 0x00007faf740e7800 Exception <a 'java/net/ConnectException'> (0x000000076e5d64a0) thrown at [/b/b/e/main/graal-jvmci-8/src/share/vm/prims/jni.cpp, line 715]
+Event: 4.583 Thread 0x00007faf740e5800 Exception <a 'java/net/ConnectException'> (0x000000076e891990) thrown at [/b/b/e/main/graal-jvmci-8/src/share/vm/prims/jni.cpp, line 715]
+Event: 4.586 Thread 0x00007faf740e3000 Exception <a 'java/lang/NullPointerException'> (0x000000076e8ff868) thrown at [/b/b/e/main/graal-jvmci-8/src/share/vm/interpreter/linkResolver.cpp, line 1166]
+Event: 4.586 Thread 0x00007faf740e3000 Exception <a 'java/lang/ExceptionInInitializerError'> (0x000000076e8ffaf0) thrown at [/b/b/e/main/graal-jvmci-8/src/share/vm/oops/instanceKlass.cpp, line 972]
+Event: 4.586 Thread 0x00007faf740e7800 Exception <a 'java/lang/NoClassDefFoundError': Could not initialize class org.graalvm.compiler.options.OptionKey$Lazy> (0x000000076e60b428) thrown at [/b/b/e/main/graal-jvmci-8/src/share/vm/oops/instanceKlass.cpp, line 887]
+
+Events (10 events):
+Event: 4.583 Thread 0x00007faf740e5800 DEOPT PACKING pc=0x00007faf60477194 sp=0x00007faf3b6f1590
+Event: 4.583 Thread 0x00007faf740e5800 DEOPT UNPACKING pc=0x00007faf60049599 sp=0x00007faf3b6f1330 mode 1
+Event: 4.583 Thread 0x00007faf740e5800 DEOPT PACKING pc=0x00007faf6041861c sp=0x00007faf3b6f19b0
+Event: 4.583 Thread 0x00007faf740e5800 DEOPT UNPACKING pc=0x00007faf60049599 sp=0x00007faf3b6f1720 mode 1
+Event: 4.585 loading class org/graalvm/compiler/options/OptionKey$Lazy
+Event: 4.585 loading class org/graalvm/compiler/options/OptionKey$Lazy done
+Event: 4.586 loading class org/graalvm/compiler/graph/Graph_OptionDescriptors$1
+Event: 4.586 loading class org/graalvm/compiler/graph/Graph_OptionDescriptors$1 done
+Event: 4.586 loading class java/lang/ExceptionInInitializerError
+Event: 4.586 loading class java/lang/ExceptionInInitializerError done
+
+
+Dynamic libraries:
+6cae00000-6cfb00000 rw-p 00000000 00:00 0 
+6cfb00000-76e500000 ---p 00000000 00:00 0 
+76e500000-777500000 rw-p 00000000 00:00 0 
+777500000-7c0000000 ---p 00000000 00:00 0 
+7c0000000-7c02c0000 rw-p 00000000 00:00 0 
+7c02c0000-800000000 ---p 00000000 00:00 0 
+5637caa14000-5637caa15000 r-xp 00000000 103:02 30408862                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/bin/java
+5637cac14000-5637cac15000 r--p 00000000 103:02 30408862                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/bin/java
+5637cac15000-5637cac16000 rw-p 00001000 103:02 30408862                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/bin/java
+5637cba9f000-5637cbac0000 rw-p 00000000 00:00 0                          [heap]
+7faef4000000-7faef4021000 rw-p 00000000 00:00 0 
+7faef4021000-7faef8000000 ---p 00000000 00:00 0 
+7faef8000000-7faef8021000 rw-p 00000000 00:00 0 
+7faef8021000-7faefc000000 ---p 00000000 00:00 0 
+7faefc000000-7faefc2dd000 rw-p 00000000 00:00 0 
+7faefc2dd000-7faf00000000 ---p 00000000 00:00 0 
+7faf00000000-7faf00021000 rw-p 00000000 00:00 0 
+7faf00021000-7faf04000000 ---p 00000000 00:00 0 
+7faf04000000-7faf04191000 rw-p 00000000 00:00 0 
+7faf04191000-7faf08000000 ---p 00000000 00:00 0 
+7faf08000000-7faf0816a000 rw-p 00000000 00:00 0 
+7faf0816a000-7faf0c000000 ---p 00000000 00:00 0 
+7faf0c000000-7faf0c021000 rw-p 00000000 00:00 0 
+7faf0c021000-7faf10000000 ---p 00000000 00:00 0 
+7faf10000000-7faf107b2000 rw-p 00000000 00:00 0 
+7faf107b2000-7faf14000000 ---p 00000000 00:00 0 
+7faf14000000-7faf14021000 rw-p 00000000 00:00 0 
+7faf14021000-7faf18000000 ---p 00000000 00:00 0 
+7faf18000000-7faf1803c000 rw-p 00000000 00:00 0 
+7faf1803c000-7faf1c000000 ---p 00000000 00:00 0 
+7faf1c000000-7faf1c021000 rw-p 00000000 00:00 0 
+7faf1c021000-7faf20000000 ---p 00000000 00:00 0 
+7faf20000000-7faf20021000 rw-p 00000000 00:00 0 
+7faf20021000-7faf24000000 ---p 00000000 00:00 0 
+7faf24000000-7faf24021000 rw-p 00000000 00:00 0 
+7faf24021000-7faf28000000 ---p 00000000 00:00 0 
+7faf28000000-7faf28021000 rw-p 00000000 00:00 0 
+7faf28021000-7faf2c000000 ---p 00000000 00:00 0 
+7faf2c000000-7faf2c021000 rw-p 00000000 00:00 0 
+7faf2c021000-7faf30000000 ---p 00000000 00:00 0 
+7faf34000000-7faf34021000 rw-p 00000000 00:00 0 
+7faf34021000-7faf38000000 ---p 00000000 00:00 0 
+7faf39e3e000-7faf39e7e000 rw-p 00000000 00:00 0 
+7faf39e7e000-7faf3a03e000 ---p 00000000 00:00 0 
+7faf3a03e000-7faf3a047000 r-xp 00000000 103:02 30409188                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libmanagement.so
+7faf3a047000-7faf3a246000 ---p 00009000 103:02 30409188                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libmanagement.so
+7faf3a246000-7faf3a247000 r--p 00008000 103:02 30409188                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libmanagement.so
+7faf3a247000-7faf3a248000 rw-p 00009000 103:02 30409188                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libmanagement.so
+7faf3a248000-7faf3a448000 rw-p 00000000 00:00 0 
+7faf3a448000-7faf3a648000 rw-p 00000000 00:00 0 
+7faf3a648000-7faf3a848000 rw-p 00000000 00:00 0 
+7faf3a848000-7faf3aa48000 rw-p 00000000 00:00 0 
+7faf3aa48000-7faf3ac48000 rw-p 00000000 00:00 0 
+7faf3ac48000-7faf3ac4b000 ---p 00000000 00:00 0 
+7faf3ac4b000-7faf3ad49000 rw-p 00000000 00:00 0 
+7faf3ad49000-7faf3adc3000 r--s 011a5000 103:02 30409449                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/jvmci/graal.jar
+7faf3adc3000-7faf3addb000 r-xp 00000000 103:02 30409168                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnet.so
+7faf3addb000-7faf3afdb000 ---p 00018000 103:02 30409168                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnet.so
+7faf3afdb000-7faf3afdc000 r--p 00018000 103:02 30409168                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnet.so
+7faf3afdc000-7faf3afdd000 rw-p 00019000 103:02 30409168                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnet.so
+7faf3afdd000-7faf3afee000 r-xp 00000000 103:02 30409203                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnio.so
+7faf3afee000-7faf3b1ed000 ---p 00011000 103:02 30409203                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnio.so
+7faf3b1ed000-7faf3b1ee000 r--p 00010000 103:02 30409203                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnio.so
+7faf3b1ee000-7faf3b1ef000 rw-p 00011000 103:02 30409203                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnio.so
+7faf3b1ef000-7faf3b1f0000 ---p 00000000 00:00 0 
+7faf3b1f0000-7faf3b2f0000 rw-p 00000000 00:00 0 
+7faf3b2f0000-7faf3b2f3000 ---p 00000000 00:00 0 
+7faf3b2f3000-7faf3b3f1000 rw-p 00000000 00:00 0 
+7faf3b3f1000-7faf3b3f2000 ---p 00000000 00:00 0 
+7faf3b3f2000-7faf3b3f5000 ---p 00000000 00:00 0 
+7faf3b3f5000-7faf3b4f2000 rw-p 00000000 00:00 0 
+7faf3b4f2000-7faf3b4f3000 ---p 00000000 00:00 0 
+7faf3b4f3000-7faf3b4f6000 ---p 00000000 00:00 0 
+7faf3b4f6000-7faf3b5f3000 rw-p 00000000 00:00 0 
+7faf3b5f3000-7faf3b5f4000 ---p 00000000 00:00 0 
+7faf3b5f4000-7faf3b5f7000 ---p 00000000 00:00 0 
+7faf3b5f7000-7faf3b6f4000 rw-p 00000000 00:00 0 
+7faf3b6f4000-7faf3b6f5000 ---p 00000000 00:00 0 
+7faf3b6f5000-7faf3b6f8000 ---p 00000000 00:00 0 
+7faf3b6f8000-7faf3b7f5000 rw-p 00000000 00:00 0 
+7faf3b7f5000-7faf3b7f8000 ---p 00000000 00:00 0 
+7faf3b7f8000-7faf3b8f6000 rw-p 00000000 00:00 0 
+7faf3b8f6000-7faf3b8f9000 ---p 00000000 00:00 0 
+7faf3b8f9000-7faf3b9f7000 rw-p 00000000 00:00 0 
+7faf3b9f7000-7faf3b9fa000 ---p 00000000 00:00 0 
+7faf3b9fa000-7faf3baf8000 rw-p 00000000 00:00 0 
+7faf3baf8000-7faf3bafc000 r-xp 00000000 103:02 30409164                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libdt_socket.so
+7faf3bafc000-7faf3bcfb000 ---p 00004000 103:02 30409164                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libdt_socket.so
+7faf3bcfb000-7faf3bcfc000 r--p 00003000 103:02 30409164                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libdt_socket.so
+7faf3bcfc000-7faf3bcfd000 rw-p 00004000 103:02 30409164                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libdt_socket.so
+7faf3bcfd000-7faf3bd00000 ---p 00000000 00:00 0 
+7faf3bd00000-7faf3bdfe000 rw-p 00000000 00:00 0 
+7faf3bdfe000-7faf3be01000 ---p 00000000 00:00 0 
+7faf3be01000-7faf3beff000 rw-p 00000000 00:00 0 
+7faf3beff000-7faf3bf02000 ---p 00000000 00:00 0 
+7faf3bf02000-7faf3c000000 rw-p 00000000 00:00 0 
+7faf3c000000-7faf3c021000 rw-p 00000000 00:00 0 
+7faf3c021000-7faf40000000 ---p 00000000 00:00 0 
+7faf4006b000-7faf4006c000 ---p 00000000 00:00 0 
+7faf4006c000-7faf48000000 rw-p 00000000 00:00 0 
+7faf48000000-7faf48021000 rw-p 00000000 00:00 0 
+7faf48021000-7faf4c000000 ---p 00000000 00:00 0 
+7faf4c000000-7faf4c021000 rw-p 00000000 00:00 0 
+7faf4c021000-7faf50000000 ---p 00000000 00:00 0 
+7faf50000000-7faf50021000 rw-p 00000000 00:00 0 
+7faf50021000-7faf54000000 ---p 00000000 00:00 0 
+7faf54000000-7faf54021000 rw-p 00000000 00:00 0 
+7faf54021000-7faf58000000 ---p 00000000 00:00 0 
+7faf58000000-7faf58021000 rw-p 00000000 00:00 0 
+7faf58021000-7faf5c000000 ---p 00000000 00:00 0 
+7faf5c034000-7faf5c050000 r--s 00393000 103:02 30409145                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/ext/cldrdata.jar
+7faf5c050000-7faf5c081000 rw-p 00000000 00:00 0 
+7faf5c081000-7faf5c0b4000 r--s 00696000 103:02 30409453                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/boot/truffle-api.jar
+7faf5c0b4000-7faf5d942000 rw-p 00000000 00:00 0 
+7faf5d942000-7faf5db13000 r--s 03c93000 103:02 30409108                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/rt.jar
+7faf5db13000-7faf5eb32000 rw-p 00000000 00:00 0 
+7faf5eb32000-7faf5eb33000 ---p 00000000 00:00 0 
+7faf5eb33000-7faf5ec33000 rw-p 00000000 00:00 0 
+7faf5ec33000-7faf5ec34000 ---p 00000000 00:00 0 
+7faf5ec34000-7faf5ed34000 rw-p 00000000 00:00 0 
+7faf5ed34000-7faf5ed35000 ---p 00000000 00:00 0 
+7faf5ed35000-7faf5ee35000 rw-p 00000000 00:00 0 
+7faf5ee35000-7faf5ee36000 ---p 00000000 00:00 0 
+7faf5ee36000-7faf5ef36000 rw-p 00000000 00:00 0 
+7faf5ef36000-7faf5ef37000 ---p 00000000 00:00 0 
+7faf5ef37000-7faf5f037000 rw-p 00000000 00:00 0 
+7faf5f037000-7faf5f038000 ---p 00000000 00:00 0 
+7faf5f038000-7faf5f138000 rw-p 00000000 00:00 0 
+7faf5f138000-7faf5f139000 ---p 00000000 00:00 0 
+7faf5f139000-7faf5f239000 rw-p 00000000 00:00 0 
+7faf5f239000-7faf5f23a000 ---p 00000000 00:00 0 
+7faf5f23a000-7faf5f361000 rw-p 00000000 00:00 0 
+7faf5f361000-7faf5f856000 ---p 00000000 00:00 0 
+7faf5f856000-7faf5f87d000 rw-p 00000000 00:00 0 
+7faf5f87d000-7faf5fd71000 ---p 00000000 00:00 0 
+7faf5fd71000-7faf5fdba000 rw-p 00000000 00:00 0 
+7faf5fdba000-7faf5ffff000 ---p 00000000 00:00 0 
+7faf5ffff000-7faf60000000 rw-p 00000000 00:00 0 
+7faf60000000-7faf61000000 rwxp 00000000 00:00 0 
+7faf61000000-7faf74000000 ---p 00000000 00:00 0 
+7faf74000000-7faf741cc000 rw-p 00000000 00:00 0 
+7faf741cc000-7faf78000000 ---p 00000000 00:00 0 
+7faf78010000-7faf78011000 r--p 00000000 103:02 24256899                  /usr/share/locale-langpack/en_GB/LC_MESSAGES/libc.mo
+7faf78011000-7faf7801b000 r--s 00117000 103:02 30409148                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/ext/localedata.jar
+7faf7801b000-7faf7801c000 r--s 00000000 103:02 30409451                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/jvmci/graal-truffle-jfr-impl.jar
+7faf7801c000-7faf7812c000 rw-p 00000000 00:00 0 
+7faf7812c000-7faf785ec000 ---p 00000000 00:00 0 
+7faf785ec000-7faf785f4000 r-xp 00000000 103:02 30409189                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libzip.so
+7faf785f4000-7faf787f3000 ---p 00008000 103:02 30409189                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libzip.so
+7faf787f3000-7faf787f4000 r--p 00007000 103:02 30409189                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libzip.so
+7faf787f4000-7faf787f5000 rw-p 00008000 103:02 30409189                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libzip.so
+7faf787f5000-7faf787f8000 r--p 00000000 103:02 21891217                  /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so
+7faf787f8000-7faf787ff000 r-xp 00003000 103:02 21891217                  /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so
+7faf787ff000-7faf78801000 r--p 0000a000 103:02 21891217                  /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so
+7faf78801000-7faf78802000 r--p 0000b000 103:02 21891217                  /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so
+7faf78802000-7faf78803000 rw-p 0000c000 103:02 21891217                  /usr/lib/x86_64-linux-gnu/libnss_files-2.31.so
+7faf78803000-7faf78809000 rw-p 00000000 00:00 0 
+7faf78809000-7faf7880e000 r--s 0008c000 103:02 30409142                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/jvmci/jvmci-hotspot.jar
+7faf7880e000-7faf78812000 r--s 0004f000 103:02 30409139                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/jvmci/jvmci-api.jar
+7faf78812000-7faf7881a000 r--s 0007f000 103:02 30409452                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/boot/graal-sdk.jar
+7faf7881a000-7faf78d8a000 r--p 00000000 103:02 21889191                  /usr/lib/locale/locale-archive
+7faf78d8a000-7faf78d8c000 r-xp 00000000 103:02 30409190                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnpt.so
+7faf78d8c000-7faf78f8c000 ---p 00002000 103:02 30409190                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnpt.so
+7faf78f8c000-7faf78f8d000 r--p 00002000 103:02 30409190                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnpt.so
+7faf78f8d000-7faf78f8e000 rw-p 00003000 103:02 30409190                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libnpt.so
+7faf78f8e000-7faf78fc8000 r-xp 00000000 103:02 30409187                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libjdwp.so
+7faf78fc8000-7faf791c7000 ---p 0003a000 103:02 30409187                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libjdwp.so
+7faf791c7000-7faf791c8000 r--p 00039000 103:02 30409187                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libjdwp.so
+7faf791c8000-7faf791c9000 rw-p 0003a000 103:02 30409187                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libjdwp.so
+7faf791c9000-7faf791f1000 r-xp 00000000 103:02 30409201                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libjava.so
+7faf791f1000-7faf793f0000 ---p 00028000 103:02 30409201                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libjava.so
+7faf793f0000-7faf793f1000 r--p 00027000 103:02 30409201                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libjava.so
+7faf793f1000-7faf793f3000 rw-p 00028000 103:02 30409201                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libjava.so
+7faf793f3000-7faf79402000 r-xp 00000000 103:02 30409158                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libverify.so
+7faf79402000-7faf79601000 ---p 0000f000 103:02 30409158                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libverify.so
+7faf79601000-7faf79603000 r--p 0000e000 103:02 30409158                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libverify.so
+7faf79603000-7faf79604000 rw-p 00010000 103:02 30409158                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/libverify.so
+7faf79604000-7faf79607000 r--p 00000000 103:02 21891228                  /usr/lib/x86_64-linux-gnu/librt-2.31.so
+7faf79607000-7faf7960b000 r-xp 00003000 103:02 21891228                  /usr/lib/x86_64-linux-gnu/librt-2.31.so
+7faf7960b000-7faf7960c000 r--p 00007000 103:02 21891228                  /usr/lib/x86_64-linux-gnu/librt-2.31.so
+7faf7960c000-7faf7960d000 ---p 00008000 103:02 21891228                  /usr/lib/x86_64-linux-gnu/librt-2.31.so
+7faf7960d000-7faf7960e000 r--p 00008000 103:02 21891228                  /usr/lib/x86_64-linux-gnu/librt-2.31.so
+7faf7960e000-7faf7960f000 rw-p 00009000 103:02 21891228                  /usr/lib/x86_64-linux-gnu/librt-2.31.so
+7faf7960f000-7faf79610000 ---p 00000000 00:00 0 
+7faf79610000-7faf79613000 ---p 00000000 00:00 0 
+7faf79613000-7faf79710000 rw-p 00000000 00:00 0 
+7faf79710000-7faf7971f000 r--p 00000000 103:02 21891211                  /usr/lib/x86_64-linux-gnu/libm-2.31.so
+7faf7971f000-7faf797c6000 r-xp 0000f000 103:02 21891211                  /usr/lib/x86_64-linux-gnu/libm-2.31.so
+7faf797c6000-7faf7985d000 r--p 000b6000 103:02 21891211                  /usr/lib/x86_64-linux-gnu/libm-2.31.so
+7faf7985d000-7faf7985e000 r--p 0014c000 103:02 21891211                  /usr/lib/x86_64-linux-gnu/libm-2.31.so
+7faf7985e000-7faf7985f000 rw-p 0014d000 103:02 21891211                  /usr/lib/x86_64-linux-gnu/libm-2.31.so
+7faf7985f000-7faf7a692000 r-xp 00000000 103:02 30409176                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/server/libjvm.so
+7faf7a692000-7faf7a891000 ---p 00e33000 103:02 30409176                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/server/libjvm.so
+7faf7a891000-7faf7a95c000 rw-p 00e32000 103:02 30409176                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/amd64/server/libjvm.so
+7faf7a95c000-7faf7a993000 rw-p 00000000 00:00 0 
+7faf7a993000-7faf7a9b8000 r--p 00000000 103:02 21891209                  /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7faf7a9b8000-7faf7ab30000 r-xp 00025000 103:02 21891209                  /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7faf7ab30000-7faf7ab7a000 r--p 0019d000 103:02 21891209                  /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7faf7ab7a000-7faf7ab7b000 ---p 001e7000 103:02 21891209                  /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7faf7ab7b000-7faf7ab7e000 r--p 001e7000 103:02 21891209                  /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7faf7ab7e000-7faf7ab81000 rw-p 001ea000 103:02 21891209                  /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7faf7ab81000-7faf7ab85000 rw-p 00000000 00:00 0 
+7faf7ab85000-7faf7ab86000 r--p 00000000 103:02 21891210                  /usr/lib/x86_64-linux-gnu/libdl-2.31.so
+7faf7ab86000-7faf7ab88000 r-xp 00001000 103:02 21891210                  /usr/lib/x86_64-linux-gnu/libdl-2.31.so
+7faf7ab88000-7faf7ab89000 r--p 00003000 103:02 21891210                  /usr/lib/x86_64-linux-gnu/libdl-2.31.so
+7faf7ab89000-7faf7ab8a000 r--p 00003000 103:02 21891210                  /usr/lib/x86_64-linux-gnu/libdl-2.31.so
+7faf7ab8a000-7faf7ab8b000 rw-p 00004000 103:02 21891210                  /usr/lib/x86_64-linux-gnu/libdl-2.31.so
+7faf7ab8b000-7faf7ab99000 r-xp 00000000 103:02 30409432                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/lib/amd64/jli/libjli.so
+7faf7ab99000-7faf7ad98000 ---p 0000e000 103:02 30409432                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/lib/amd64/jli/libjli.so
+7faf7ad98000-7faf7ad99000 r--p 0000d000 103:02 30409432                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/lib/amd64/jli/libjli.so
+7faf7ad99000-7faf7ad9a000 rw-p 0000e000 103:02 30409432                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/lib/amd64/jli/libjli.so
+7faf7ad9a000-7faf7ad9c000 r--p 00000000 103:02 21889218                  /usr/lib/x86_64-linux-gnu/libz.so.1.2.11
+7faf7ad9c000-7faf7adad000 r-xp 00002000 103:02 21889218                  /usr/lib/x86_64-linux-gnu/libz.so.1.2.11
+7faf7adad000-7faf7adb3000 r--p 00013000 103:02 21889218                  /usr/lib/x86_64-linux-gnu/libz.so.1.2.11
+7faf7adb3000-7faf7adb4000 ---p 00019000 103:02 21889218                  /usr/lib/x86_64-linux-gnu/libz.so.1.2.11
+7faf7adb4000-7faf7adb5000 r--p 00019000 103:02 21889218                  /usr/lib/x86_64-linux-gnu/libz.so.1.2.11
+7faf7adb5000-7faf7adb6000 rw-p 0001a000 103:02 21889218                  /usr/lib/x86_64-linux-gnu/libz.so.1.2.11
+7faf7adb6000-7faf7adbd000 r--p 00000000 103:02 21891226                  /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+7faf7adbd000-7faf7adce000 r-xp 00007000 103:02 21891226                  /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+7faf7adce000-7faf7add3000 r--p 00018000 103:02 21891226                  /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+7faf7add3000-7faf7add4000 r--p 0001c000 103:02 21891226                  /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+7faf7add4000-7faf7add5000 rw-p 0001d000 103:02 21891226                  /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+7faf7add5000-7faf7add9000 rw-p 00000000 00:00 0 
+7faf7add9000-7faf7adda000 r--s 00005000 103:02 30409450                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/jvmci/graal-management.jar
+7faf7adda000-7faf7addb000 r--s 00005000 103:02 30409099                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/jvmci-services.jar
+7faf7addb000-7faf7ade1000 r--s 000d3000 103:02 30409101                  /home/fotisk/Documents/graal/graal/compiler/mxbuild/linux-amd64/graaljdks/jdk1.8-cmp/jre/lib/jfr.jar
+7faf7ade1000-7faf7ade9000 rw-s 00000000 103:02 21364807                  /tmp/hsperfdata_fotisk/8685
+7faf7ade9000-7faf7adec000 rw-p 00000000 00:00 0 
+7faf7adec000-7faf7aded000 r--p 00000000 103:02 21891205                  /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7faf7aded000-7faf7ae10000 r-xp 00001000 103:02 21891205                  /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7faf7ae10000-7faf7ae18000 r--p 00024000 103:02 21891205                  /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7faf7ae18000-7faf7ae19000 r--p 00000000 00:00 0 
+7faf7ae19000-7faf7ae1a000 r--p 0002c000 103:02 21891205                  /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7faf7ae1a000-7faf7ae1b000 rw-p 0002d000 103:02 21891205                  /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7faf7ae1b000-7faf7ae1c000 rw-p 00000000 00:00 0 
+7ffdae64d000-7ffdae66f000 rw-p 00000000 00:00 0                          [stack]
+7ffdae7dd000-7ffdae7e0000 r--p 00000000 00:00 0                          [vvar]
+7ffdae7e0000-7ffdae7e1000 r-xp 00000000 00:00 0                          [vdso]
+ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
+
+VM Arguments:
+jvm_args: -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -Dgraal.CompilationFailureAction=Diagnose -Dgraal.PrintGraph=Network -Dgraal.ObjdumpExecutables=objdump,gobjdump -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=8000,suspend=y -XX:+UseJVMCICompiler 
+java_command: tpchQuery6Version
+java_class_path (initial): .
+Launcher Type: SUN_STANDARD
+
+Environment Variables:
+JAVA_HOME=/usr/lib/jvm/openjdk-8u272+10-jvmci-21.0-b03-linux-amd64/openjdk1.8.0_272-jvmci-21.0-b03/
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+USERNAME=fotisk
+SHELL=/bin/bash
+DISPLAY=:0
+
+Signal Handlers:
+SIGSEGV: [libjvm.so+0xbe65d0], sa_mask[0]=11111111011111111101111111111110, sa_flags=SA_RESTART|SA_SIGINFO
+SIGBUS: [libjvm.so+0xbe65d0], sa_mask[0]=11111111011111111101111111111110, sa_flags=SA_RESTART|SA_SIGINFO
+SIGFPE: [libjvm.so+0xa0ffc0], sa_mask[0]=11111111011111111101111111111110, sa_flags=SA_RESTART|SA_SIGINFO
+SIGPIPE: [libjvm.so+0xa0ffc0], sa_mask[0]=11111111011111111101111111111110, sa_flags=SA_RESTART|SA_SIGINFO
+SIGXFSZ: [libjvm.so+0xa0ffc0], sa_mask[0]=11111111011111111101111111111110, sa_flags=SA_RESTART|SA_SIGINFO
+SIGILL: [libjvm.so+0xa0ffc0], sa_mask[0]=11111111011111111101111111111110, sa_flags=SA_RESTART|SA_SIGINFO
+SIGUSR1: SIG_DFL, sa_mask[0]=00000000000000000000000000000000, sa_flags=none
+SIGUSR2: [libjvm.so+0xa0fe90], sa_mask[0]=00100000000000000000000000000000, sa_flags=SA_RESTART|SA_SIGINFO
+SIGHUP: [libjvm.so+0xa104b0], sa_mask[0]=11111111011111111101111111111110, sa_flags=SA_RESTART|SA_SIGINFO
+SIGINT: [libjvm.so+0xa104b0], sa_mask[0]=11111111011111111101111111111110, sa_flags=SA_RESTART|SA_SIGINFO
+SIGTERM: [libjvm.so+0xa104b0], sa_mask[0]=11111111011111111101111111111110, sa_flags=SA_RESTART|SA_SIGINFO
+SIGQUIT: [libjvm.so+0xa104b0], sa_mask[0]=11111111011111111101111111111110, sa_flags=SA_RESTART|SA_SIGINFO
+
+
+---------------  S Y S T E M  ---------------
+
+OS:DISTRIB_ID=Ubuntu
+DISTRIB_RELEASE=20.04
+DISTRIB_CODENAME=focal
+DISTRIB_DESCRIPTION="Ubuntu 20.04.1 LTS"
+
+uname:Linux 5.4.0-54-generic #60-Ubuntu SMP Fri Nov 6 10:37:59 UTC 2020 x86_64
+libc:glibc 2.31 NPTL 2.31 
+rlimit: STACK 8192k, CORE 0k, NPROC 62525, NOFILE 1048576, AS infinity
+load average:0.51 0.74 0.65
+
+/proc/meminfo:
+MemTotal:       16063360 kB
+MemFree:         5921008 kB
+MemAvailable:   11339036 kB
+Buffers:          486820 kB
+Cached:          5540748 kB
+SwapCached:            0 kB
+Active:          5176112 kB
+Inactive:        4028040 kB
+Active(anon):    3544248 kB
+Inactive(anon):   172848 kB
+Active(file):    1631864 kB
+Inactive(file):  3855192 kB
+Unevictable:      372248 kB
+Mlocked:              64 kB
+SwapTotal:       2097148 kB
+SwapFree:        2097148 kB
+Dirty:               308 kB
+Writeback:             0 kB
+AnonPages:       3548908 kB
+Mapped:          1009872 kB
+Shmem:            550436 kB
+KReclaimable:     274860 kB
+Slab:             444840 kB
+SReclaimable:     274860 kB
+SUnreclaim:       169980 kB
+KernelStack:       15056 kB
+PageTables:        36884 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:    10128828 kB
+Committed_AS:   10966616 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:       33872 kB
+VmallocChunk:          0 kB
+Percpu:             6784 kB
+HardwareCorrupted:     0 kB
+AnonHugePages:         0 kB
+ShmemHugePages:        0 kB
+ShmemPmdMapped:        0 kB
+FileHugePages:         0 kB
+FilePmdMapped:         0 kB
+CmaTotal:              0 kB
+CmaFree:               0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+Hugetlb:               0 kB
+DirectMap4k:      324476 kB
+DirectMap2M:     9828352 kB
+DirectMap1G:     7340032 kB
+
+container (cgroup) information:
+container_type: cgroupv1
+cpu_cpuset_cpus: 0-7
+cpu_memory_nodes: 0
+active_processor_count: 8
+cpu_quota: -1
+cpu_period: 100000
+cpu_shares: -1
+memory_limit_in_bytes: -1
+memory_and_swap_limit_in_bytes: -2
+memory_soft_limit_in_bytes: -1
+memory_usage_in_bytes: 8609095680
+memory_max_usage_in_bytes: 9417551872
+
+
+CPU:total 8 (initial active 8) (4 cores per cpu, 2 threads per core) family 6 model 142 stepping 12, cmov, cx8, fxsr, mmx, sse, sse2, sse3, ssse3, sse4.1, sse4.2, popcnt, avx, avx2, aes, clmul, erms, 3dnowpref, lzcnt, ht, tsc, tscinvbit, bmi1, bmi2, adx
+
+/proc/cpuinfo:
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 142
+model name	: Intel(R) Core(TM) i7-8665U CPU @ 1.90GHz
+stepping	: 12
+microcode	: 0xde
+cpu MHz		: 3280.035
+cache size	: 8192 KB
+physical id	: 0
+siblings	: 8
+core id		: 0
+cpu cores	: 4
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 22
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp md_clear flush_l1d arch_capabilities
+bugs		: spectre_v1 spectre_v2 spec_store_bypass swapgs taa itlb_multihit srbds
+bogomips	: 4199.88
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 39 bits physical, 48 bits virtual
+power management:
+
+processor	: 1
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 142
+model name	: Intel(R) Core(TM) i7-8665U CPU @ 1.90GHz
+stepping	: 12
+microcode	: 0xde
+cpu MHz		: 3227.516
+cache size	: 8192 KB
+physical id	: 0
+siblings	: 8
+core id		: 1
+cpu cores	: 4
+apicid		: 2
+initial apicid	: 2
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 22
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp md_clear flush_l1d arch_capabilities
+bugs		: spectre_v1 spectre_v2 spec_store_bypass swapgs taa itlb_multihit srbds
+bogomips	: 4199.88
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 39 bits physical, 48 bits virtual
+power management:
+
+processor	: 2
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 142
+model name	: Intel(R) Core(TM) i7-8665U CPU @ 1.90GHz
+stepping	: 12
+microcode	: 0xde
+cpu MHz		: 3222.949
+cache size	: 8192 KB
+physical id	: 0
+siblings	: 8
+core id		: 2
+cpu cores	: 4
+apicid		: 4
+initial apicid	: 4
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 22
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp md_clear flush_l1d arch_capabilities
+bugs		: spectre_v1 spectre_v2 spec_store_bypass swapgs taa itlb_multihit srbds
+bogomips	: 4199.88
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 39 bits physical, 48 bits virtual
+power management:
+
+processor	: 3
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 142
+model name	: Intel(R) Core(TM) i7-8665U CPU @ 1.90GHz
+stepping	: 12
+microcode	: 0xde
+cpu MHz		: 3255.842
+cache size	: 8192 KB
+physical id	: 0
+siblings	: 8
+core id		: 3
+cpu cores	: 4
+apicid		: 6
+initial apicid	: 6
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 22
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp md_clear flush_l1d arch_capabilities
+bugs		: spectre_v1 spectre_v2 spec_store_bypass swapgs taa itlb_multihit srbds
+bogomips	: 4199.88
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 39 bits physical, 48 bits virtual
+power management:
+
+processor	: 4
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 142
+model name	: Intel(R) Core(TM) i7-8665U CPU @ 1.90GHz
+stepping	: 12
+microcode	: 0xde
+cpu MHz		: 3269.009
+cache size	: 8192 KB
+physical id	: 0
+siblings	: 8
+core id		: 0
+cpu cores	: 4
+apicid		: 1
+initial apicid	: 1
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 22
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp md_clear flush_l1d arch_capabilities
+bugs		: spectre_v1 spectre_v2 spec_store_bypass swapgs taa itlb_multihit srbds
+bogomips	: 4199.88
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 39 bits physical, 48 bits virtual
+power management:
+
+processor	: 5
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 142
+model name	: Intel(R) Core(TM) i7-8665U CPU @ 1.90GHz
+stepping	: 12
+microcode	: 0xde
+cpu MHz		: 3267.360
+cache size	: 8192 KB
+physical id	: 0
+siblings	: 8
+core id		: 1
+cpu cores	: 4
+apicid		: 3
+initial apicid	: 3
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 22
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp md_clear flush_l1d arch_capabilities
+bugs		: spectre_v1 spectre_v2 spec_store_bypass swapgs taa itlb_multihit srbds
+bogomips	: 4199.88
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 39 bits physical, 48 bits virtual
+power management:
+
+processor	: 6
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 142
+model name	: Intel(R) Core(TM) i7-8665U CPU @ 1.90GHz
+stepping	: 12
+microcode	: 0xde
+cpu MHz		: 3266.894
+cache size	: 8192 KB
+physical id	: 0
+siblings	: 8
+core id		: 2
+cpu cores	: 4
+apicid		: 5
+initial apicid	: 5
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 22
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp md_clear flush_l1d arch_capabilities
+bugs		: spectre_v1 spectre_v2 spec_store_bypass swapgs taa itlb_multihit srbds
+bogomips	: 4199.88
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 39 bits physical, 48 bits virtual
+power management:
+
+processor	: 7
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 142
+model name	: Intel(R) Core(TM) i7-8665U CPU @ 1.90GHz
+stepping	: 12
+microcode	: 0xde
+cpu MHz		: 3267.050
+cache size	: 8192 KB
+physical id	: 0
+siblings	: 8
+core id		: 3
+cpu cores	: 4
+apicid		: 7
+initial apicid	: 7
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 22
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow vnmi flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid mpx rdseed adx smap clflushopt intel_pt xsaveopt xsavec xgetbv1 xsaves dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp md_clear flush_l1d arch_capabilities
+bugs		: spectre_v1 spectre_v2 spec_store_bypass swapgs taa itlb_multihit srbds
+bogomips	: 4199.88
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 39 bits physical, 48 bits virtual
+power management:
+
+
+
+Memory: 4k page, physical 16063360k(5920268k free), swap 2097148k(2097148k free)
+
+vm_info: OpenJDK 64-Bit Server VM Graal:compiler_565c2b3f39ab117249f1369bb74e7c461a3ddd19 (25.272-b10-jvmci-21.0-b03) for linux-amd64 JRE (1.8.0), built on Dec  4 2020 19:44:49 by "buildslave" with gcc 7.3.0
+
+time: Tue Dec 15 12:41:18 2020
+timezone: GMT
+elapsed time: 4.612732 seconds (0d 0h 0m 4s)
+
