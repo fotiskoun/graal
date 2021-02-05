@@ -212,6 +212,9 @@ class tpchQuery6Version {
 //        }
 
     }
+    public static void GorillaTimestamp(){
+
+    }
 
 
     public static void callFunction(int cacheSizeIntegers, int[] dumpArray, int i, CompressedProxy di, CompressedProxy qu, int[] shipdate, int[] discount, int[] quantity,
@@ -233,6 +236,7 @@ class tpchQuery6Version {
                             if (discount[i] >= 5) {
                                 if (quantity[i] < 24) {
                                     sum += (extendedprice[i] * discount[i]);
+                                    sum+=1;
                                 }
                             }
                         }
