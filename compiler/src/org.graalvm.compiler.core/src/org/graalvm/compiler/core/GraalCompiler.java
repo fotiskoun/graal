@@ -24,14 +24,9 @@
  */
 package org.graalvm.compiler.core;
 
-import jdk.vm.ci.meta.JavaType;
-import jdk.vm.ci.meta.JavaTypeProfile;
 import org.graalvm.compiler.code.CompilationResult;
 import org.graalvm.compiler.core.common.PermanentBailoutException;
 import org.graalvm.compiler.core.common.RetryableBailoutException;
-import org.graalvm.compiler.core.common.cfg.Loop;
-import org.graalvm.compiler.core.common.type.StampFactory;
-import org.graalvm.compiler.core.common.type.StampPair;
 import org.graalvm.compiler.core.common.util.CompilationAlarm;
 import org.graalvm.compiler.core.target.Backend;
 import org.graalvm.compiler.debug.DebugCloseable;
@@ -41,29 +36,26 @@ import org.graalvm.compiler.debug.MethodFilter;
 import org.graalvm.compiler.debug.TimerKey;
 import org.graalvm.compiler.graph.Node;
 import org.graalvm.compiler.graph.iterators.NodeIterable;
+import org.graalvm.compiler.java.GraphBuilderPhase;
 import org.graalvm.compiler.lir.asm.CompilationResultBuilderFactory;
 import org.graalvm.compiler.lir.phases.LIRSuites;
-import org.graalvm.compiler.nodes.AbstractBeginNode;
 import org.graalvm.compiler.nodes.BeginNode;
-import org.graalvm.compiler.nodes.CallTargetNode;
-import org.graalvm.compiler.nodes.ConstantNode;
 import org.graalvm.compiler.nodes.EndNode;
 import org.graalvm.compiler.nodes.FixedGuardNode;
-import org.graalvm.compiler.nodes.FixedNode;
 import org.graalvm.compiler.nodes.FixedWithNextNode;
 import org.graalvm.compiler.nodes.IfNode;
+import org.graalvm.compiler.nodes.Invoke;
 import org.graalvm.compiler.nodes.InvokeNode;
 import org.graalvm.compiler.nodes.LoopBeginNode;
-import org.graalvm.compiler.nodes.LoopEndNode;
-import org.graalvm.compiler.nodes.LoopExitNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
-import org.graalvm.compiler.nodes.ValueNode;
+import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
+import org.graalvm.compiler.nodes.graphbuilderconf.IntrinsicContext;
 import org.graalvm.compiler.nodes.java.ArrayLengthNode;
 import org.graalvm.compiler.nodes.java.LoadIndexedNode;
-import org.graalvm.compiler.nodes.java.MethodCallTargetNode;
 import org.graalvm.compiler.phases.OptimisticOptimizations;
 import org.graalvm.compiler.phases.PhaseSuite;
 import org.graalvm.compiler.phases.common.DeadCodeEliminationPhase;
+import org.graalvm.compiler.phases.common.inlining.InliningUtil;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
 import org.graalvm.compiler.phases.tiers.LowTierContext;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
@@ -75,7 +67,8 @@ import jdk.vm.ci.meta.ProfilingInfo;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 import java.util.ArrayList;
-import java.util.List;
+
+import static org.graalvm.compiler.nodes.graphbuilderconf.IntrinsicContext.CompilationContext.INLINE_AFTER_PARSING;
 
 /**
  * Static methods for orchestrating the compilation of a {@linkplain StructuredGraph graph}.
@@ -257,29 +250,32 @@ public class GraalCompiler {
       }
 
       // Iterate through the nodes
-      NodeIterable<Node> nod = graph.getNodes();
-      ArrayList<Node> fn = new ArrayList<>();
-      boolean ifRun = true; // declares an if node
-      for (Node n : nod) {
-        if (n instanceof LoopBeginNode) {
-          FixedNode LoopNode = (FixedNode) n;
-          while (!(LoopNode instanceof LoopEndNode) &&
-              ((LoopNode instanceof FixedWithNextNode) || (LoopNode instanceof IfNode))) {
-            fn.add(LoopNode);
-            if (ifRun) {
-              LoopNode = ((FixedWithNextNode) LoopNode).next();
-              if (LoopNode instanceof IfNode) {
-                ifRun = false;
-              }
-            } else {
-              LoopNode = ((IfNode) LoopNode).trueSuccessor();
-              ifRun = true;
-            }
-          }
-          fn.add(LoopNode);
-          matchPattern(fn, 0, graph);
-          fn.clear();
-        }
+      NodeIterable<Node> graphNodes = graph.getNodes();
+//      ArrayList<Node> fn = new ArrayList<>();
+//      boolean ifRun = true; // declares an if node
+      for (Node node : graphNodes) {
+        matchSecond(node, new PatternNode("LoopBeginNode"), new PatternNode("ArrayLengthNode"),
+            new PatternNode("IfNode"), new PatternNode("BeginNode"), new PatternNode("LoadIndexedNode"),
+            new PatternNode("FixedGuardNode"), new AncestorNode(), new PatternNode("EndNode"));
+//        if (n instanceof LoopBeginNode) {
+//          FixedNode LoopNode = (FixedNode) n;
+//          while (!(LoopNode instanceof LoopEndNode) &&
+//              ((LoopNode instanceof FixedWithNextNode) || (LoopNode instanceof IfNode))) {
+//            fn.add(LoopNode);
+//            if (ifRun) {
+//              LoopNode = ((FixedWithNextNode) LoopNode).next();
+//              if (LoopNode instanceof IfNode) {
+//                ifRun = false;
+//              }
+//            } else {
+//              LoopNode = ((IfNode) LoopNode).trueSuccessor();
+//              ifRun = true;
+//            }
+//          }
+//          fn.add(LoopNode);
+//          matchPattern(fn, 0, graph, providers);
+//          fn.clear();
+//        }
       }
 
       suites.getHighTier().apply(graph, highTierContext);
@@ -304,7 +300,104 @@ public class GraalCompiler {
     }
   }
 
-  public static void matchPattern(ArrayList<Node> n, int position, StructuredGraph graph) {
+//  match(Node firstNode, {LoopBeginNode, ArrayLengthNode})
+//  LoopBeginNode/ArrayLengthNode/IfNode[0]/BeginNode
+//  LoopBeginNode//LoopEndNode
+//  xpath
+//  GraalNodes or something like that for n
+
+  public static class PatternNode {
+    public String currentNode;
+    // 0 for true successor, 1 for false successor, 2 for both
+    public int children;
+
+    PatternNode() {}
+
+    PatternNode(String node) {
+      if (node.charAt(node.length()-1) == ']' && node.charAt(node.length()-3) == '['){
+        this.currentNode = node.substring(0, node.length()-3);
+        this.children = Character.getNumericValue(node.charAt(node.length()-2));
+      }
+      this.currentNode = node;
+    }
+
+    @Override
+    public boolean equals(Object o){
+      return this.currentNode.equals(o);
+    }
+  }
+
+  public static class AnyPatternNode extends PatternNode {
+    public String currentNode = "";
+    public int children = 2; // return all children in case of IfNode
+
+    @Override
+    public boolean equals(Object o){
+      return true;
+    }
+  }
+
+  public static class AncestorNode extends PatternNode {
+    public String currentNode = "";
+    public int children = 2; // return all children in case of IfNode
+
+    @Override
+    public boolean equals(Object o){
+      return true;
+    }
+  }
+
+  public static PatternNode[] getNewPattern(PatternNode[] currentPattern, Node nextNode){
+    String classFullName = nextNode.getClass().getName();
+    String[] arrayName = classFullName.split("\\.");
+    String className = arrayName[arrayName.length - 1];
+
+    if((!(currentPattern[0] instanceof AncestorNode)) || (currentPattern[1].equals(className))){
+      int newPatternLength = currentPattern.length - 1;
+      PatternNode[] newPattern = new PatternNode[newPatternLength];
+      System.arraycopy(currentPattern, 1, newPattern, 0, newPatternLength);
+      return newPattern;
+    }else {
+      return currentPattern;
+    }
+  }
+
+  public static Node getNext(Node currentNode, int NumberOfChild) {
+    if (currentNode instanceof FixedWithNextNode) {
+      return ((FixedWithNextNode) currentNode).next();
+    } else if (NumberOfChild==0) {
+      return ((IfNode) currentNode).trueSuccessor();
+    } else if (NumberOfChild==1) {
+      return ((IfNode) currentNode).falseSuccessor();
+    } else {
+      return ((IfNode) currentNode).trueSuccessor();
+    } //TODO implement returning collection of Nodes
+  }
+
+  public static void matchSecond(Node incomingMatch, PatternNode... pattern) {
+
+    if (pattern.length == 0) {
+      System.out.println("no pattern provided");
+      return;
+    }
+    String classFullName = incomingMatch.getClass().getName();
+    String[] arrayName = classFullName.split("\\.");
+    String className = arrayName[arrayName.length - 1];
+    if (!(pattern[0].equals(className))) {
+      System.out.println("no match");
+      return;
+    } else {
+      if (pattern.length > 1) {
+        Node next = getNext(incomingMatch, pattern[0].children);
+        matchSecond(next, getNewPattern(pattern, next));
+      } else {
+        System.out.println("match");
+        return;
+      }
+    }
+  }
+
+  public static void matchPattern(ArrayList<Node> n, int position, StructuredGraph graph, Providers providers) {
     int s = n.size();
     if (s < 8) {
       System.out.println("no match");
@@ -313,30 +406,41 @@ public class GraalCompiler {
         n.get(1) instanceof ArrayLengthNode &&
         n.get(2) instanceof IfNode &&
         n.get(3) instanceof BeginNode) {
-      matchPattern(n, 4, graph);
+      matchPattern(n, 4, graph, providers);
     } else if (position > 3 && s - position > 1 &&
         n.get(position) instanceof LoadIndexedNode &&
         n.get(position + 1) instanceof FixedGuardNode) {
-      matchPattern(n, position + 2, graph);
+      matchPattern(n, position + 2, graph, providers);
     } else if (position > 3 && s - position > 2 &&
         n.get(position) instanceof LoadIndexedNode &&
         n.get(position + 1) instanceof IfNode &&
         n.get(position + 2) instanceof BeginNode) {
-      matchPattern(n, position + 3, graph);
+      matchPattern(n, position + 3, graph, providers);
     } else if (position > 5 && s - position > 2 &&
         n.get(position) instanceof LoadIndexedNode &&
         n.get(position + 1) instanceof LoadIndexedNode &&
-        n.get(position + 2) instanceof EndNode) {
-      EndNode en = (EndNode) n.get(position + 2);
-      LoadIndexedNode li = (LoadIndexedNode) n.get(position + 1);
-      BeginNode b = graph.add(new BeginNode());
-      graph.addAfterFixed(li, b);
-
+        n.get(position + 2) instanceof InvokeNode &&
+        n.get(position + 3) instanceof EndNode) {
+      EndNode en = (EndNode) n.get(position + 3);
+//      LoadIndexedNode li = (LoadIndexedNode) n.get(position + 1);
+//      BeginNode b = graph.add(new BeginNode());
+//      graph.addAfterFixed(li, b);
+      Node invokeNode = n.get(position + 2);
+      GraphBuilderConfiguration.Plugins plugins = new GraphBuilderConfiguration.Plugins(providers.getReplacements().getGraphBuilderPlugins());
+      GraphBuilderConfiguration config = GraphBuilderConfiguration.getSnippetDefault(plugins);
+      Invoke invoke = (Invoke) invokeNode;
+      ResolvedJavaMethod method = invoke.callTarget().targetMethod();
+      StructuredGraph calleeGraph = new StructuredGraph.Builder(invokeNode.getOptions(), invokeNode.getDebug()).method(method).trackNodeSourcePosition(
+          invokeNode.graph().trackNodeSourcePosition()).setIsSubstitution(true).build();
+      IntrinsicContext initialReplacementContext = new IntrinsicContext(method, method, providers.getReplacements().getDefaultReplacementBytecodeProvider(), INLINE_AFTER_PARSING);
+      GraphBuilderPhase.Instance instance = new GraphBuilderPhase.Instance(providers, config, OptimisticOptimizations.NONE, initialReplacementContext);
+      instance.apply(calleeGraph);
+      InliningUtil.inline(invoke, calleeGraph, false, method, "test", "Experimental");
 
     } else if (position > 5 && s - position > 1 &&
         n.get(position) instanceof LoadIndexedNode &&
         n.get(position + 1) instanceof LoadIndexedNode) {
-      matchPattern(n, position + 2, graph);
+      matchPattern(n, position + 2, graph, providers);
     } else if (position > 5 && s - position > 1 &&
         n.get(position) instanceof LoadIndexedNode &&
         n.get(position + 1) instanceof EndNode) {

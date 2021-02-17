@@ -236,7 +236,7 @@ class tpchQuery6Version {
                             if (discount[i] >= 5) {
                                 if (quantity[i] < 24) {
                                     sum += (extendedprice[i] * discount[i]);
-                                    sum+=1;
+                                    sum += invokeBuild();
                                 }
                             }
                         }
@@ -260,6 +260,14 @@ class tpchQuery6Version {
                 int el = dumpArray[flush];
             }
         }
+    }
+    
+    public static int invokeBuild(){
+    	int x = 1;
+    	for(int i = 0; i < 10; i ++) {
+    		x+=1;
+    	}
+    	return x;
     }
 }
 /*

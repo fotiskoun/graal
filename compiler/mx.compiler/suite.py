@@ -1400,6 +1400,7 @@ suite = {
       "dependencies" : [
         "org.graalvm.compiler.virtual",
         "org.graalvm.compiler.loop.phases",
+        "org.graalvm.compiler.java",
       ],
       "checkstyle" : "org.graalvm.compiler.graph",
       "javaCompliance" : "8+",
