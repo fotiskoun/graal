@@ -39,7 +39,11 @@ public abstract class AccessArrayNode extends FixedWithNextNode {
     public static final NodeClass<AccessArrayNode> TYPE = NodeClass.create(AccessArrayNode.class);
     @Input protected ValueNode array;
 
-    public ValueNode array() {
+  public AccessArrayNode() {
+
+  }
+
+  public ValueNode array() {
         return array;
     }
 

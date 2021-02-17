@@ -51,7 +51,11 @@ public abstract class AbstractFixedGuardNode extends DeoptimizingFixedWithNextNo
     protected boolean negated;
     protected NodeSourcePosition noDeoptSuccessorPosition;
 
-    @Override
+  public AbstractFixedGuardNode() {
+    super();
+  }
+
+  @Override
     public LogicNode getCondition() {
         return condition;
     }

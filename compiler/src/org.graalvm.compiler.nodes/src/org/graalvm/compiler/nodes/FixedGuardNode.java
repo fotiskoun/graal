@@ -69,7 +69,11 @@ public final class FixedGuardNode extends AbstractFixedGuardNode implements Lowe
         super(TYPE, condition, deoptReason, action, speculation, negated, noDeoptSuccessorPosition);
     }
 
-    @Override
+  public FixedGuardNode() {
+    super();
+  }
+
+  @Override
     public void simplify(SimplifierTool tool) {
         super.simplify(tool);
 

@@ -64,6 +64,10 @@ public final class ArrayLengthNode extends FixedWithNextNode implements Canonica
     public static final NodeClass<ArrayLengthNode> TYPE = NodeClass.create(ArrayLengthNode.class);
     @Input ValueNode array;
 
+    public ArrayLengthNode() {
+        super();
+    }
+
     public ValueNode array() {
         return array;
     }

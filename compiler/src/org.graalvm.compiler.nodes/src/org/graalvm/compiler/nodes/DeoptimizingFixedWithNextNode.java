@@ -44,7 +44,11 @@ public abstract class DeoptimizingFixedWithNextNode extends FixedWithNextNode im
         this.stateBefore = stateBefore;
     }
 
-    @Override
+  public DeoptimizingFixedWithNextNode() {
+
+  }
+
+  @Override
     public FrameState stateBefore() {
         return stateBefore;
     }

@@ -40,7 +40,11 @@ public abstract class ControlSplitNode extends FixedNode {
         super(c, stamp);
     }
 
-    public abstract double probability(AbstractBeginNode successor);
+  public ControlSplitNode() {
+
+  }
+
+  public abstract double probability(AbstractBeginNode successor);
 
     /**
      * Attempts to set the probability for the given successor to the passed value (which has to be

@@ -107,7 +107,11 @@ public final class IfNode extends ControlSplitNode implements Simplifiable, LIRL
     @Input(InputType.Condition) LogicNode condition;
     protected double trueSuccessorProbability;
 
-    public LogicNode condition() {
+  public IfNode() {
+    super();
+  }
+
+  public LogicNode condition() {
         return condition;
     }
 

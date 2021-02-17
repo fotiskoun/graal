@@ -59,7 +59,11 @@ public abstract class ValueNode extends org.graalvm.compiler.graph.Node implemen
         this.stamp = stamp;
     }
 
-    public final Stamp stamp(NodeView view) {
+  public ValueNode() {
+    super();
+  }
+
+  public final Stamp stamp(NodeView view) {
         return view.stamp(this);
     }
 

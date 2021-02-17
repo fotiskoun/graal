@@ -46,7 +46,12 @@ public abstract class AccessIndexedNode extends AccessArrayNode implements Lower
     @OptionalInput(InputType.Guard) private GuardingNode boundsCheck;
     protected final JavaKind elementKind;
 
-    public ValueNode index() {
+  public AccessIndexedNode() {
+    super();
+    this.elementKind = null;
+  }
+
+  public ValueNode index() {
         return index;
     }
 

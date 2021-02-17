@@ -97,6 +97,10 @@ public abstract class Node implements Cloneable, Formattable, NodeInterface {
     static final int INITIAL_ID = -1;
     static final int ALIVE_ID_START = 0;
 
+  public Node() {
+
+  }
+
     // The use of fully qualified class names here and in the rest
     // of this file works around a problem javac has resolving symbols
 

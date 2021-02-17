@@ -38,6 +38,10 @@ public abstract class FixedWithNextNode extends FixedNode {
 
     @Successor protected FixedNode next;
 
+    public FixedWithNextNode() {
+        super();
+    }
+
     public FixedNode next() {
         return next;
     }

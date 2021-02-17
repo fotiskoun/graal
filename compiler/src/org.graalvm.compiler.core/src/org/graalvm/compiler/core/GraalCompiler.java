@@ -254,9 +254,13 @@ public class GraalCompiler {
 //      ArrayList<Node> fn = new ArrayList<>();
 //      boolean ifRun = true; // declares an if node
       for (Node node : graphNodes) {
-        matchSecond(node, new PatternNode("LoopBeginNode"), new PatternNode("ArrayLengthNode"),
-            new PatternNode("IfNode"), new PatternNode("BeginNode"), new PatternNode("LoadIndexedNode"),
-            new PatternNode("FixedGuardNode"), new AncestorNode(), new PatternNode("EndNode"));
+        matchSecond(node, new PatternNode(new LoopBeginNode()), new PatternNode(new ArrayLengthNode()),
+            new PatternNode(new IfNode(),0), new PatternNode(new BeginNode()),
+            new PatternNode(new LoadIndexedNode()), new PatternNode(new FixedGuardNode()),
+            new AncestorNode(), new PatternNode(new EndNode()));
+//            new PatternNode("LoopBeginNode"), new PatternNode("ArrayLengthNode"),
+//            new PatternNode("IfNode"), new PatternNode("BeginNode"), new PatternNode("LoadIndexedNode"),
+//            new PatternNode("FixedGuardNode"), new AncestorNode(), new PatternNode("EndNode"));
 //        if (n instanceof LoopBeginNode) {
 //          FixedNode LoopNode = (FixedNode) n;
 //          while (!(LoopNode instanceof LoopEndNode) &&
@@ -307,28 +311,29 @@ public class GraalCompiler {
 //  GraalNodes or something like that for n
 
   public static class PatternNode {
-    public String currentNode;
+    public Node currentNode;
     // 0 for true successor, 1 for false successor, 2 for both
     public int children;
 
     PatternNode() {}
 
-    PatternNode(String node) {
-      if (node.charAt(node.length()-1) == ']' && node.charAt(node.length()-3) == '['){
-        this.currentNode = node.substring(0, node.length()-3);
-        this.children = Character.getNumericValue(node.charAt(node.length()-2));
-      }
+    PatternNode(Node node) {
       this.currentNode = node;
+    }
+
+    PatternNode(Node node, int amountOfChildren) {
+      this.currentNode = node;
+      this.children = amountOfChildren;
     }
 
     @Override
     public boolean equals(Object o){
-      return this.currentNode.equals(o);
+      return this.currentNode.getClass().equals(o);
     }
   }
 
   public static class AnyPatternNode extends PatternNode {
-    public String currentNode = "";
+    public Node currentNode = null;
     public int children = 2; // return all children in case of IfNode
 
     @Override
@@ -338,7 +343,7 @@ public class GraalCompiler {
   }
 
   public static class AncestorNode extends PatternNode {
-    public String currentNode = "";
+    public Node currentNode = null;
     public int children = 2; // return all children in case of IfNode
 
     @Override
@@ -348,11 +353,7 @@ public class GraalCompiler {
   }
 
   public static PatternNode[] getNewPattern(PatternNode[] currentPattern, Node nextNode){
-    String classFullName = nextNode.getClass().getName();
-    String[] arrayName = classFullName.split("\\.");
-    String className = arrayName[arrayName.length - 1];
-
-    if((!(currentPattern[0] instanceof AncestorNode)) || (currentPattern[1].equals(className))){
+    if((!(currentPattern[0] instanceof AncestorNode)) || (currentPattern[1].equals(nextNode.getClass()))){
       int newPatternLength = currentPattern.length - 1;
       PatternNode[] newPattern = new PatternNode[newPatternLength];
       System.arraycopy(currentPattern, 1, newPattern, 0, newPatternLength);
@@ -380,10 +381,7 @@ public class GraalCompiler {
       System.out.println("no pattern provided");
       return;
     }
-    String classFullName = incomingMatch.getClass().getName();
-    String[] arrayName = classFullName.split("\\.");
-    String className = arrayName[arrayName.length - 1];
-    if (!(pattern[0].equals(className))) {
+    if (!(pattern[0].equals(incomingMatch.getClass()) )) {
       System.out.println("no match");
       return;
     } else {

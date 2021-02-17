@@ -82,7 +82,11 @@ public class LoadIndexedNode extends AccessIndexedNode implements Virtualizable,
         this(TYPE, createStamp(assumptions, array, elementKind), array, index, boundsCheck, elementKind);
     }
 
-    public static ValueNode create(Assumptions assumptions, ValueNode array, ValueNode index, GuardingNode boundsCheck, JavaKind elementKind, MetaAccessProvider metaAccess,
+  public LoadIndexedNode() {
+    super();
+  }
+
+  public static ValueNode create(Assumptions assumptions, ValueNode array, ValueNode index, GuardingNode boundsCheck, JavaKind elementKind, MetaAccessProvider metaAccess,
                     ConstantReflectionProvider constantReflection) {
         ValueNode constant = tryConstantFold(array, index, metaAccess, constantReflection);
         if (constant != null) {
