@@ -42,11 +42,13 @@ import org.graalvm.compiler.lir.phases.LIRSuites;
 import org.graalvm.compiler.nodes.BeginNode;
 import org.graalvm.compiler.nodes.EndNode;
 import org.graalvm.compiler.nodes.FixedGuardNode;
+import org.graalvm.compiler.nodes.FixedNode;
 import org.graalvm.compiler.nodes.FixedWithNextNode;
 import org.graalvm.compiler.nodes.IfNode;
 import org.graalvm.compiler.nodes.Invoke;
 import org.graalvm.compiler.nodes.InvokeNode;
 import org.graalvm.compiler.nodes.LoopBeginNode;
+import org.graalvm.compiler.nodes.LoopEndNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
 import org.graalvm.compiler.nodes.graphbuilderconf.IntrinsicContext;
@@ -255,7 +257,7 @@ public class GraalCompiler {
 //      boolean ifRun = true; // declares an if node
       for (Node node : graphNodes) {
         matchSecond(node, new PatternNode(new LoopBeginNode()), new PatternNode(new ArrayLengthNode()),
-            new PatternNode(new IfNode(),0), new PatternNode(new BeginNode()),
+            new PatternNode(new IfNode()), new IndexNode(0), new PatternNode(new BeginNode()),
             new PatternNode(new LoadIndexedNode()), new PatternNode(new FixedGuardNode()),
             new AncestorNode(), new PatternNode(new EndNode()));
 //            new PatternNode("LoopBeginNode"), new PatternNode("ArrayLengthNode"),
@@ -305,7 +307,7 @@ public class GraalCompiler {
   }
 
 //  match(Node firstNode, {LoopBeginNode, ArrayLengthNode})
-//  LoopBeginNode/ArrayLengthNode/IfNode[0]/BeginNode
+//  LoopBeginNode/ArrayLengthNode/IfNode/IndexNode[0]/BeginNode
 //  LoopBeginNode//LoopEndNode
 //  xpath
 //  GraalNodes or something like that for n
@@ -332,9 +334,20 @@ public class GraalCompiler {
     }
   }
 
+  public static class IndexNode extends PatternNode{
+    public int index; // return all children in case of IfNode
+    public IndexNode(int currentIndex){
+      this.index = currentIndex;
+    }
+
+    @Override
+    public boolean equals(Object o){
+      return false;
+    }
+  }
+
   public static class AnyPatternNode extends PatternNode {
     public Node currentNode = null;
-    public int children = 2; // return all children in case of IfNode
 
     @Override
     public boolean equals(Object o){
@@ -344,7 +357,6 @@ public class GraalCompiler {
 
   public static class AncestorNode extends PatternNode {
     public Node currentNode = null;
-    public int children = 2; // return all children in case of IfNode
 
     @Override
     public boolean equals(Object o){
@@ -363,16 +375,18 @@ public class GraalCompiler {
     }
   }
 
-  public static Node getNext(Node currentNode, int NumberOfChild) {
+  public static ArrayList<Node> getNext(Node currentNode) {
+    ArrayList<Node> result = new ArrayList<Node>();
+
     if (currentNode instanceof FixedWithNextNode) {
-      return ((FixedWithNextNode) currentNode).next();
-    } else if (NumberOfChild==0) {
-      return ((IfNode) currentNode).trueSuccessor();
-    } else if (NumberOfChild==1) {
-      return ((IfNode) currentNode).falseSuccessor();
-    } else {
-      return ((IfNode) currentNode).trueSuccessor();
-    } //TODO implement returning collection of Nodes
+      result.add(((FixedWithNextNode) currentNode).next());
+    }
+    else {
+      result.add(((IfNode) currentNode).trueSuccessor());
+      result.add(((IfNode) currentNode).falseSuccessor());
+
+    }
+    return result;
   }
 
   public static void matchSecond(Node incomingMatch, PatternNode... pattern) {
@@ -386,8 +400,15 @@ public class GraalCompiler {
       return;
     } else {
       if (pattern.length > 1) {
-        Node next = getNext(incomingMatch, pattern[0].children);
-        matchSecond(next, getNewPattern(pattern, next));
+        if(pattern.length > 2 && pattern[1] instanceof IndexNode){
+          Node next = getNext(incomingMatch).get(((IndexNode) pattern[1]).index);
+          matchSecond(next, getNewPattern(getNewPattern(pattern, next), next));
+        }
+
+        for (Node next :
+            getNext(incomingMatch)) {
+          matchSecond(next, getNewPattern(pattern, next));
+        }
       } else {
         System.out.println("match");
         return;
@@ -430,7 +451,7 @@ public class GraalCompiler {
       ResolvedJavaMethod method = invoke.callTarget().targetMethod();
       StructuredGraph calleeGraph = new StructuredGraph.Builder(invokeNode.getOptions(), invokeNode.getDebug()).method(method).trackNodeSourcePosition(
           invokeNode.graph().trackNodeSourcePosition()).setIsSubstitution(true).build();
-      IntrinsicContext initialReplacementContext = new IntrinsicContext(method, method, providers.getReplacements().getDefaultReplacementBytecodeProvider(), INLINE_AFTER_PARSING);
+      IntrinsicContext initialReplacementContext = null;
       GraphBuilderPhase.Instance instance = new GraphBuilderPhase.Instance(providers, config, OptimisticOptimizations.NONE, initialReplacementContext);
       instance.apply(calleeGraph);
       InliningUtil.inline(invoke, calleeGraph, false, method, "test", "Experimental");

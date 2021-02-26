@@ -263,9 +263,10 @@ class tpchQuery6Version {
     }
     
     public static int invokeBuild(){
+        Random ran = new Random();
     	int x = 1;
     	for(int i = 0; i < 10; i ++) {
-    		x+=1;
+    		x+=ran.nextInt(30);
     	}
     	return x;
     }
