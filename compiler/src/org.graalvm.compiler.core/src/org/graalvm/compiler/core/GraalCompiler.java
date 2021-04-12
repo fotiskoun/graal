@@ -86,6 +86,7 @@ public class GraalCompiler {
   private static Node dataNode;
   private static ArrayList<PatternNode[]> plist = new ArrayList<>();
   private static ArrayList<Node> nlist = new ArrayList<>();
+  private static ArrayList<Node> checkedNodes = new ArrayList<>();
 
   /**
    * Encapsulates all the inputs to a {@linkplain GraalCompiler#compile(Request) compilation}.
@@ -414,9 +415,14 @@ public class GraalCompiler {
     if (!(pattern[0].equals(incomingMatch.getClass()))) {
       if (nlist.size() > 0) {
         int lastIndex = nlist.size() - 1;
-        matchSecond(nlist.get(lastIndex), plist.get(lastIndex));
-        plist.remove(lastIndex);
-        nlist.remove(lastIndex);
+        if(checkedNodes.contains(nlist.get(lastIndex))){
+          plist.remove(lastIndex);
+          nlist.remove(lastIndex);
+        }
+        if (nlist.size() > 0) {
+          lastIndex = nlist.size() - 1;
+          matchSecond(nlist.get(lastIndex), plist.get(lastIndex));
+        }
       } else {
         System.out.println("no match");
         return;
