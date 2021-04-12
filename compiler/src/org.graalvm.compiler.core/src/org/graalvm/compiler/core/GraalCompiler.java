@@ -54,6 +54,7 @@ import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
 import org.graalvm.compiler.nodes.graphbuilderconf.IntrinsicContext;
 import org.graalvm.compiler.nodes.java.ArrayLengthNode;
 import org.graalvm.compiler.nodes.java.LoadIndexedNode;
+import org.graalvm.compiler.nodes.java.NewArrayNode;
 import org.graalvm.compiler.phases.OptimisticOptimizations;
 import org.graalvm.compiler.phases.PhaseSuite;
 import org.graalvm.compiler.phases.common.DeadCodeEliminationPhase;
@@ -79,6 +80,12 @@ public class GraalCompiler {
 
   private static final TimerKey CompilerTimer = DebugContext.timer("GraalCompiler").doc("Time spent in compilation (excludes code installation).");
   private static final TimerKey FrontEnd = DebugContext.timer("FrontEnd").doc("Time spent processing HIR.");
+  // lambdaCall could be an array list of pairs(?) if we need more than
+  // one lambdas and in pair it will also store an identity to be called
+  private static LambdaFunction lambdaCall;
+  private static Node dataNode;
+  private static ArrayList<PatternNode[]> plist = new ArrayList<>();
+  private static ArrayList<Node> nlist = new ArrayList<>();
 
   /**
    * Encapsulates all the inputs to a {@linkplain GraalCompiler#compile(Request) compilation}.
@@ -253,35 +260,26 @@ public class GraalCompiler {
 
       // Iterate through the nodes
       NodeIterable<Node> graphNodes = graph.getNodes();
-//      ArrayList<Node> fn = new ArrayList<>();
-//      boolean ifRun = true; // declares an if node
       for (Node node : graphNodes) {
-        matchSecond(node, new PatternNode(new LoopBeginNode()), new PatternNode(new ArrayLengthNode()),
+        matchSecond(node,
+            /*new PatternNode(new NewArrayNode(), (x) -> {
+              Node child = ((FixedWithNextNode) x).next();
+              BeginNode b = graph.add(new BeginNode());
+              graph.addAfterFixed((FixedWithNextNode) x, b);
+              ((FixedWithNextNode) x).setNext(b);
+              graph.addAfterFixed(b, (FixedWithNextNode) child);
+            }), new AncestorNode(),*/ new PatternNode(new LoopBeginNode(), (x) -> {
+              Node child = ((FixedWithNextNode) x).next();
+              BeginNode b = graph.add(new BeginNode());
+              graph.addAfterFixed((FixedWithNextNode) x, b);
+              ((FixedWithNextNode) x).setNext(b);
+              graph.addAfterFixed(b, (FixedWithNextNode) child);
+            }), /*new PatternNode(new ArrayLengthNode()),*/
+            new AncestorNode(),
             new PatternNode(new IfNode()), new IndexNode(0), new PatternNode(new BeginNode()),
-            new PatternNode(new LoadIndexedNode()), new PatternNode(new FixedGuardNode()),
-            new AncestorNode(), new PatternNode(new EndNode()));
-//            new PatternNode("LoopBeginNode"), new PatternNode("ArrayLengthNode"),
-//            new PatternNode("IfNode"), new PatternNode("BeginNode"), new PatternNode("LoadIndexedNode"),
-//            new PatternNode("FixedGuardNode"), new AncestorNode(), new PatternNode("EndNode"));
-//        if (n instanceof LoopBeginNode) {
-//          FixedNode LoopNode = (FixedNode) n;
-//          while (!(LoopNode instanceof LoopEndNode) &&
-//              ((LoopNode instanceof FixedWithNextNode) || (LoopNode instanceof IfNode))) {
-//            fn.add(LoopNode);
-//            if (ifRun) {
-//              LoopNode = ((FixedWithNextNode) LoopNode).next();
-//              if (LoopNode instanceof IfNode) {
-//                ifRun = false;
-//              }
-//            } else {
-//              LoopNode = ((IfNode) LoopNode).trueSuccessor();
-//              ifRun = true;
-//            }
-//          }
-//          fn.add(LoopNode);
-//          matchPattern(fn, 0, graph, providers);
-//          fn.clear();
-//        }
+            new PatternNode(new LoadIndexedNode()),/* new PatternNode(new FixedGuardNode()),*/
+            new AncestorNode(), new PatternNode(new LoadIndexedNode()), /*new PatternNode(new LoadIndexedNode()),*/
+            new PatternNode(new EndNode()));
       }
 
       suites.getHighTier().apply(graph, highTierContext);
@@ -306,21 +304,22 @@ public class GraalCompiler {
     }
   }
 
-//  match(Node firstNode, {LoopBeginNode, ArrayLengthNode})
-//  LoopBeginNode/ArrayLengthNode/IfNode/IndexNode[0]/BeginNode
-//  LoopBeginNode//LoopEndNode
-//  xpath
-//  GraalNodes or something like that for n
-
   public static class PatternNode {
     public Node currentNode;
     // 0 for true successor, 1 for false successor, 2 for both
     public int children;
+    LambdaFunction lambda = null;
 
-    PatternNode() {}
+    PatternNode() {
+    }
 
     PatternNode(Node node) {
       this.currentNode = node;
+    }
+
+    PatternNode(Node node, LambdaFunction lbd) {
+      this.currentNode = node;
+      this.lambda = lbd;
     }
 
     PatternNode(Node node, int amountOfChildren) {
@@ -329,19 +328,20 @@ public class GraalCompiler {
     }
 
     @Override
-    public boolean equals(Object o){
+    public boolean equals(Object o) {
       return this.currentNode.getClass().equals(o);
     }
   }
 
-  public static class IndexNode extends PatternNode{
+  public static class IndexNode extends PatternNode {
     public int index; // return all children in case of IfNode
-    public IndexNode(int currentIndex){
+
+    public IndexNode(int currentIndex) {
       this.index = currentIndex;
     }
 
     @Override
-    public boolean equals(Object o){
+    public boolean equals(Object o) {
       return false;
     }
   }
@@ -350,7 +350,7 @@ public class GraalCompiler {
     public Node currentNode = null;
 
     @Override
-    public boolean equals(Object o){
+    public boolean equals(Object o) {
       return true;
     }
   }
@@ -359,18 +359,25 @@ public class GraalCompiler {
     public Node currentNode = null;
 
     @Override
-    public boolean equals(Object o){
+    public boolean equals(Object o) {
       return true;
     }
   }
 
-  public static PatternNode[] getNewPattern(PatternNode[] currentPattern, Node nextNode){
-    if((!(currentPattern[0] instanceof AncestorNode)) || (currentPattern[1].equals(nextNode.getClass()))){
+  public static PatternNode[] getNewPattern(PatternNode[] currentPattern, Node nextNode) {
+    if (!(currentPattern[0] instanceof AncestorNode)) {
       int newPatternLength = currentPattern.length - 1;
       PatternNode[] newPattern = new PatternNode[newPatternLength];
       System.arraycopy(currentPattern, 1, newPattern, 0, newPatternLength);
       return newPattern;
-    }else {
+    } else if (currentPattern[1].equals(nextNode.getClass())) {
+      nlist.add(nextNode);
+      plist.add(currentPattern);
+      int newPatternLength = currentPattern.length - 1;
+      PatternNode[] newPattern = new PatternNode[newPatternLength];
+      System.arraycopy(currentPattern, 1, newPattern, 0, newPatternLength);
+      return newPattern;
+    } else {
       return currentPattern;
     }
   }
@@ -380,102 +387,62 @@ public class GraalCompiler {
 
     if (currentNode instanceof FixedWithNextNode) {
       result.add(((FixedWithNextNode) currentNode).next());
-    }
-    else {
+    } else if (currentNode instanceof IfNode) {
       result.add(((IfNode) currentNode).trueSuccessor());
       result.add(((IfNode) currentNode).falseSuccessor());
-
-    }
+    } /*else if (currentNode instanceof EndNode) {
+      for(Node node:currentNode.usages() ) {
+        result.add(node);
+      }
+    }*/
     return result;
   }
 
+  private static boolean firstTime = true;
+
   public static void matchSecond(Node incomingMatch, PatternNode... pattern) {
+
+    if (pattern[0].lambda != null) {
+      lambdaCall = pattern[0].lambda;
+      dataNode = incomingMatch;
+    }
 
     if (pattern.length == 0) {
       System.out.println("no pattern provided");
       return;
     }
-    if (!(pattern[0].equals(incomingMatch.getClass()) )) {
-      System.out.println("no match");
-      return;
+    if (!(pattern[0].equals(incomingMatch.getClass()))) {
+      if (nlist.size() > 0) {
+        int lastIndex = nlist.size() - 1;
+        matchSecond(nlist.get(lastIndex), plist.get(lastIndex));
+        plist.remove(lastIndex);
+        nlist.remove(lastIndex);
+      } else {
+        System.out.println("no match");
+        return;
+      }
     } else {
       if (pattern.length > 1) {
-        if(pattern.length > 2 && pattern[1] instanceof IndexNode){
+        if (pattern.length > 2 && pattern[1] instanceof IndexNode) {
           Node next = getNext(incomingMatch).get(((IndexNode) pattern[1]).index);
           matchSecond(next, getNewPattern(getNewPattern(pattern, next), next));
         }
 
-        for (Node next :
-            getNext(incomingMatch)) {
+        for (Node next : getNext(incomingMatch)) {
           matchSecond(next, getNewPattern(pattern, next));
         }
       } else {
         System.out.println("match");
+        if (firstTime) {
+          lambdaCall.simplePrint(dataNode);
+          firstTime = false;
+        }
         return;
       }
     }
   }
+}
 
-  public static void matchPattern(ArrayList<Node> n, int position, StructuredGraph graph, Providers providers) {
-    int s = n.size();
-    if (s < 8) {
-      System.out.println("no match");
-      return;
-    } else if (position == 0 && n.get(0) instanceof LoopBeginNode &&
-        n.get(1) instanceof ArrayLengthNode &&
-        n.get(2) instanceof IfNode &&
-        n.get(3) instanceof BeginNode) {
-      matchPattern(n, 4, graph, providers);
-    } else if (position > 3 && s - position > 1 &&
-        n.get(position) instanceof LoadIndexedNode &&
-        n.get(position + 1) instanceof FixedGuardNode) {
-      matchPattern(n, position + 2, graph, providers);
-    } else if (position > 3 && s - position > 2 &&
-        n.get(position) instanceof LoadIndexedNode &&
-        n.get(position + 1) instanceof IfNode &&
-        n.get(position + 2) instanceof BeginNode) {
-      matchPattern(n, position + 3, graph, providers);
-    } else if (position > 5 && s - position > 2 &&
-        n.get(position) instanceof LoadIndexedNode &&
-        n.get(position + 1) instanceof LoadIndexedNode &&
-        n.get(position + 2) instanceof InvokeNode &&
-        n.get(position + 3) instanceof EndNode) {
-      EndNode en = (EndNode) n.get(position + 3);
-//      LoadIndexedNode li = (LoadIndexedNode) n.get(position + 1);
-//      BeginNode b = graph.add(new BeginNode());
-//      graph.addAfterFixed(li, b);
-      Node invokeNode = n.get(position + 2);
-      GraphBuilderConfiguration.Plugins plugins = new GraphBuilderConfiguration.Plugins(providers.getReplacements().getGraphBuilderPlugins());
-      GraphBuilderConfiguration config = GraphBuilderConfiguration.getSnippetDefault(plugins);
-      Invoke invoke = (Invoke) invokeNode;
-      ResolvedJavaMethod method = invoke.callTarget().targetMethod();
-      StructuredGraph calleeGraph = new StructuredGraph.Builder(invokeNode.getOptions(), invokeNode.getDebug()).method(method).trackNodeSourcePosition(
-          invokeNode.graph().trackNodeSourcePosition()).setIsSubstitution(true).build();
-      IntrinsicContext initialReplacementContext = null;
-      GraphBuilderPhase.Instance instance = new GraphBuilderPhase.Instance(providers, config, OptimisticOptimizations.NONE, initialReplacementContext);
-      instance.apply(calleeGraph);
-      InliningUtil.inline(invoke, calleeGraph, false, method, "test", "Experimental");
-
-    } else if (position > 5 && s - position > 1 &&
-        n.get(position) instanceof LoadIndexedNode &&
-        n.get(position + 1) instanceof LoadIndexedNode) {
-      matchPattern(n, position + 2, graph, providers);
-    } else if (position > 5 && s - position > 1 &&
-        n.get(position) instanceof LoadIndexedNode &&
-        n.get(position + 1) instanceof EndNode) {
-      System.out.println("matchit");
-    }
-
-  }
-
-  protected static <T extends CompilationResult> String getCompilationUnitName(StructuredGraph graph, T compilationResult) {
-    if (compilationResult != null && compilationResult.getName() != null) {
-      return compilationResult.getName();
-    }
-    ResolvedJavaMethod method = graph.method();
-    if (method == null) {
-      return "<unknown>";
-    }
-    return method.format("%H.%n(%p)");
-  }
+interface LambdaFunction {
+  void simplePrint(Node node);
 }

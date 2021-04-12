@@ -114,62 +114,10 @@ class tpchQuery6Version {
     }
 
     public static void main(String[] args) throws FileNotFoundException, ParseException, InterruptedException {
-        File f = new File("./tpch6Accepted.tbl");
-        Scanner scnr = new Scanner(f);
-        int i = 0;
-        int rowsOftext = 113860; //6001215; //600037902;
-        int[] extendedprice = new int[rowsOftext];
-        int[] quantity = new int[rowsOftext];
-        int[] discount = new int[rowsOftext];
-        int[] shipdate = new int[rowsOftext];
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-//        System.out.println(scnr.nextLine());
-
-        System.out.println("Load arrays");
-        while (scnr.hasNextLine()) {//} && i < 50) {
-            String line = scnr.nextLine();
-            String[] r = line.split("\\|");
-
-            extendedprice[i] = (int) (Float.parseFloat(r[5]) * 100);
-            quantity[i] = (int) Float.parseFloat(r[4]);
-            discount[i] = (int) (Float.parseFloat(r[6]) * 100);
-            shipdate[i] = (int) (formatter.parse(r[10]).getTime() / 1000);
-
-            i++;
-        }
-        scnr.close();
-
-        System.out.println("Fill the dump Array");
-        int cacheSizeIntegers = 2_500_000;
-        int[] dumpArray = new int[cacheSizeIntegers];
-        Random randNum = new Random();
-        for (int dump = 0; dump < cacheSizeIntegers; dump++) {
-            dumpArray[dump] = randNum.nextInt();
-        }
-
-
-        System.out.println("iterate values");
-
-        // iterate though the arrays to create the select values
-
-        int endDate = (int) (formatter.parse("1995-01-01").getTime() / 1000);
-        int startDate = (int) (formatter.parse("1994-01-01").getTime() / 1000);
-
-        CompressedProxy sh = new CompressedProxy(shipdate);
-        // CompressedProxy ex = new CompressedProxy(extendedprice);
-        CompressedProxy qu = new CompressedProxy(quantity);
-        CompressedProxy di = new CompressedProxy(discount);
-
-        // System.out.println(di.size); // 11
-        // System.out.println(qu.size); // 550
-        // System.out.println(sh.size); // 1347244
-        // System.out.println(ex.size); // 6000557
-        TimeUnit.SECONDS.sleep(1);
 
         for(;;) {
-            callFunction(cacheSizeIntegers, dumpArray, i, di, qu, shipdate, discount, quantity, extendedprice, endDate, startDate);
+            initArrayCall();
         }
-
 //        for (int iteration = 0; iteration < 15; iteration++) {
 //            long start = System.nanoTime();
 //
@@ -212,7 +160,106 @@ class tpchQuery6Version {
 //        }
 
     }
-    public static void GorillaTimestamp(){
+
+    public static void initArrayCall() throws FileNotFoundException, ParseException, InterruptedException{
+        File f = new File("./tpch6Accepted.tbl");
+        Scanner scnr = new Scanner(f);
+        int i = 0;
+        int rowsOftext = 10000; //113860; //6001215; //600037902;
+        int[] extendedprice = new int[rowsOftext];
+        int[] quantity = new int[rowsOftext];
+        int[] discount = new int[rowsOftext];
+        int[] shipdate = new int[rowsOftext];
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+//        System.out.println(scnr.nextLine());
+
+        System.out.println("Load arrays");
+        while (scnr.hasNextLine()  && i < rowsOftext) {
+            String line = scnr.nextLine();
+            String[] r = line.split("\\|");
+
+            extendedprice[i] = (int) (Float.parseFloat(r[5]) * 100);
+            quantity[i] = (int) Float.parseFloat(r[4]);
+            discount[i] = (int) (Float.parseFloat(r[6]) * 100);
+            shipdate[i] = (int) (formatter.parse(r[10]).getTime() / 1000);
+
+            i++;
+        }
+        scnr.close();
+
+        System.out.println("Fill the dump Array");
+        int cacheSizeIntegers = 2_500_000;
+        int[] dumpArray = new int[cacheSizeIntegers];
+        Random randNum = new Random();
+        for (int dump = 0; dump < cacheSizeIntegers; dump++) {
+            dumpArray[dump] = randNum.nextInt();
+        }
+
+
+        System.out.println("iterate values");
+
+        // iterate though the arrays to create the select values
+
+        int endDate = (int) (formatter.parse("1995-01-01").getTime() / 1000);
+        int startDate = (int) (formatter.parse("1994-01-01").getTime() / 1000);
+
+        CompressedProxy sh = new CompressedProxy(shipdate);
+        // CompressedProxy ex = new CompressedProxy(extendedprice);
+        CompressedProxy qu = new CompressedProxy(quantity);
+        CompressedProxy di = new CompressedProxy(discount);
+
+        // System.out.println(di.size); // 11
+        // System.out.println(qu.size); // 550
+        // System.out.println(sh.size); // 1347244
+        // System.out.println(ex.size); // 6000557
+        TimeUnit.SECONDS.sleep(1);
+
+//        for (int iteration = 0; iteration < 15; iteration++) {
+            long start = System.nanoTime();
+
+            CompressedProxy[] cols = new CompressedProxy[]{di, qu};
+            int[] iters = new int[]{0, 0};
+            int[] curRes = new int[]{di.get(0), 0, qu.get(0), 0};
+            int[][] nextRes;
+            int length, inner_i;
+
+            long sum = 0;
+            for (i = 0; i < shipdate.length; i++) {
+                if (shipdate[i] <= endDate) {
+                    if (shipdate[i] > startDate) {
+                        if (discount[i] <= 7) {
+                            if (discount[i] >= 5) {
+                                if (quantity[i] < 24) {
+                                    sum += (extendedprice[i] * discount[i]);
+//                                    sum += invokeBuild();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // System.out.println(i + " " + j + " " + (i - j));
+            // 6001215 5887026 114189
+            System.out.println("reve");
+            System.out.println(sum);
+            // 1.23176432E12 float or 1231767619627 long
+
+            long elapsedTime = System.nanoTime() - start;
+            System.out.println((elapsedTime / 1000000) + "  milliseconds");
+
+//        }
+
+        for (int flushIter = 0; flushIter < 5; flushIter++) {
+            for (int flush = 0; flush < cacheSizeIntegers; flush++) {
+                int el = dumpArray[flush];
+            }
+        }
+
+//        for(;;) {
+//            callFunction(cacheSizeIntegers, dumpArray, i, di, qu, shipdate, discount, quantity, extendedprice, endDate, startDate);
+//        }
+
 
     }
 
@@ -236,7 +283,7 @@ class tpchQuery6Version {
                             if (discount[i] >= 5) {
                                 if (quantity[i] < 24) {
                                     sum += (extendedprice[i] * discount[i]);
-                                    sum += invokeBuild();
+//                                    sum += invokeBuild();
                                 }
                             }
                         }

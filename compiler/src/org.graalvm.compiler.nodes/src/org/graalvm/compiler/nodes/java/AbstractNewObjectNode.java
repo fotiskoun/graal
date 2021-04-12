@@ -57,7 +57,11 @@ public abstract class AbstractNewObjectNode extends DeoptimizingFixedWithNextNod
         this.fillContents = fillContents;
     }
 
-    /**
+  public AbstractNewObjectNode() {
+
+  }
+
+  /**
      * @return <code>true</code> if the object's contents should be initialized to zero/null.
      */
     public boolean fillContents() {

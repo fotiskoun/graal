@@ -41,6 +41,10 @@ public abstract class AbstractNewArrayNode extends AbstractNewObjectNode impleme
     public static final NodeClass<AbstractNewArrayNode> TYPE = NodeClass.create(AbstractNewArrayNode.class);
     @Input protected ValueNode length;
 
+    public AbstractNewArrayNode() {
+        super();
+    }
+
     public ValueNode length() {
         return length;
     }
