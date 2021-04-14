@@ -49,10 +49,13 @@ import org.graalvm.compiler.nodes.Invoke;
 import org.graalvm.compiler.nodes.InvokeNode;
 import org.graalvm.compiler.nodes.LoopBeginNode;
 import org.graalvm.compiler.nodes.LoopEndNode;
+import org.graalvm.compiler.nodes.LoopExitNode;
 import org.graalvm.compiler.nodes.StructuredGraph;
+import org.graalvm.compiler.nodes.extended.OSRLocalNode;
 import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
 import org.graalvm.compiler.nodes.graphbuilderconf.IntrinsicContext;
 import org.graalvm.compiler.nodes.java.ArrayLengthNode;
+import org.graalvm.compiler.nodes.java.InstanceOfNode;
 import org.graalvm.compiler.nodes.java.LoadIndexedNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
 import org.graalvm.compiler.phases.OptimisticOptimizations;
@@ -84,9 +87,7 @@ public class GraalCompiler {
   // one lambdas and in pair it will also store an identity to be called
   private static LambdaFunction lambdaCall;
   private static Node dataNode;
-  private static ArrayList<PatternNode[]> plist = new ArrayList<>();
-  private static ArrayList<Node> nlist = new ArrayList<>();
-  private static ArrayList<Node> checkedNodes = new ArrayList<>();
+  private static boolean firstTime = true;
 
   /**
    * Encapsulates all the inputs to a {@linkplain GraalCompiler#compile(Request) compilation}.
@@ -263,26 +264,32 @@ public class GraalCompiler {
       NodeIterable<Node> graphNodes = graph.getNodes();
       for (Node node : graphNodes) {
         matchSecond(node,
-            /*new PatternNode(new NewArrayNode(), (x) -> {
+            /*new PatternNode(new OSRLocalNode()),
+            new PatternNode(new InstanceOfNode(), (x) -> {
+              System.out.println("it was called");*/
+            new PatternNode(new NewArrayNode(), (x) -> {
+              System.out.println("it was called");
+              /*Node child = ((FixedWithNextNode) x).next();
+              BeginNode b = graph.add(new BeginNode());
+              graph.addAfterFixed((FixedWithNextNode) x, b);
+              ((FixedWithNextNode) x).setNext(b);
+              graph.addAfterFixed(b, (FixedWithNextNode) child);*/
+            }), new AncestorNode(), new PatternNode(new LoopBeginNode()/*, (x) -> {
               Node child = ((FixedWithNextNode) x).next();
               BeginNode b = graph.add(new BeginNode());
               graph.addAfterFixed((FixedWithNextNode) x, b);
               ((FixedWithNextNode) x).setNext(b);
               graph.addAfterFixed(b, (FixedWithNextNode) child);
-            }), new AncestorNode(),*/ new PatternNode(new LoopBeginNode(), (x) -> {
-              Node child = ((FixedWithNextNode) x).next();
-              BeginNode b = graph.add(new BeginNode());
-              graph.addAfterFixed((FixedWithNextNode) x, b);
-              ((FixedWithNextNode) x).setNext(b);
-              graph.addAfterFixed(b, (FixedWithNextNode) child);
-            }), /*new PatternNode(new ArrayLengthNode()),*/
-            new AncestorNode(),
+            }*/), /*new PatternNode(new ArrayLengthNode()),*/
+            new AncestorNode(new LoopEndNode(), new LoopExitNode()),
             new PatternNode(new IfNode()), new IndexNode(0), new PatternNode(new BeginNode()),
             new PatternNode(new LoadIndexedNode()),/* new PatternNode(new FixedGuardNode()),*/
             new AncestorNode(), new PatternNode(new LoadIndexedNode()), /*new PatternNode(new LoadIndexedNode()),*/
-            new PatternNode(new EndNode()));
+            /*new AncestorNode(),*/ new PatternNode(new EndNode()));
+        dataNode = null;
+        lambdaCall = null;
+        firstTime = true;
       }
-
       suites.getHighTier().apply(graph, highTierContext);
       graph.maybeCompress();
       debug.dump(DebugContext.BASIC_LEVEL, graph, "After high tier");
@@ -358,28 +365,52 @@ public class GraalCompiler {
 
   public static class AncestorNode extends PatternNode {
     public Node currentNode = null;
+    //Give max two nodes to avoid
+    //better than using an arraylist
+    //and looping through it every time
+    public Node avoidNode = null;
+    public Node secondAvoidNode = null;
+
+    AncestorNode() {
+    }
+
+    AncestorNode(Node avdnd) {
+      this.avoidNode = avdnd;
+    }
+
+    AncestorNode(Node avdnd, Node scavdnd) {
+      this.avoidNode = avdnd;
+      this.secondAvoidNode = scavdnd;
+    }
 
     @Override
     public boolean equals(Object o) {
+      if ((this.avoidNode != null && this.avoidNode.getClass().equals(o)) ||
+          this.secondAvoidNode != null && this.secondAvoidNode.getClass().equals(o)) {
+        return false;
+      }
       return true;
     }
   }
 
-  public static PatternNode[] getNewPattern(PatternNode[] currentPattern, Node nextNode) {
+  public static ArrayList<PatternNode[]> getNewPattern(PatternNode[] currentPattern, Node nextNode) {
+    ArrayList<PatternNode[]> returnList = new ArrayList<>();
     if (!(currentPattern[0] instanceof AncestorNode)) {
       int newPatternLength = currentPattern.length - 1;
       PatternNode[] newPattern = new PatternNode[newPatternLength];
       System.arraycopy(currentPattern, 1, newPattern, 0, newPatternLength);
-      return newPattern;
+      returnList.add(newPattern);
+      return returnList;
     } else if (currentPattern[1].equals(nextNode.getClass())) {
-      nlist.add(nextNode);
-      plist.add(currentPattern);
       int newPatternLength = currentPattern.length - 1;
       PatternNode[] newPattern = new PatternNode[newPatternLength];
       System.arraycopy(currentPattern, 1, newPattern, 0, newPatternLength);
-      return newPattern;
+      returnList.add(newPattern);
+      returnList.add(currentPattern);
+      return returnList;
     } else {
-      return currentPattern;
+      returnList.add(currentPattern);
+      return returnList;
     }
   }
 
@@ -391,15 +422,13 @@ public class GraalCompiler {
     } else if (currentNode instanceof IfNode) {
       result.add(((IfNode) currentNode).trueSuccessor());
       result.add(((IfNode) currentNode).falseSuccessor());
-    } /*else if (currentNode instanceof EndNode) {
-      for(Node node:currentNode.usages() ) {
+    } else if (currentNode instanceof EndNode) {
+      for (Node node : currentNode.usages()) {
         result.add(node);
       }
-    }*/
+    }
     return result;
   }
-
-  private static boolean firstTime = true;
 
   public static void matchSecond(Node incomingMatch, PatternNode... pattern) {
 
@@ -413,29 +442,20 @@ public class GraalCompiler {
       return;
     }
     if (!(pattern[0].equals(incomingMatch.getClass()))) {
-      if (nlist.size() > 0) {
-        int lastIndex = nlist.size() - 1;
-        if(checkedNodes.contains(nlist.get(lastIndex))){
-          plist.remove(lastIndex);
-          nlist.remove(lastIndex);
-        }
-        if (nlist.size() > 0) {
-          lastIndex = nlist.size() - 1;
-          matchSecond(nlist.get(lastIndex), plist.get(lastIndex));
-        }
-      } else {
-        System.out.println("no match");
-        return;
-      }
+      System.out.println("no match");
+      return;
     } else {
       if (pattern.length > 1) {
         if (pattern.length > 2 && pattern[1] instanceof IndexNode) {
           Node next = getNext(incomingMatch).get(((IndexNode) pattern[1]).index);
-          matchSecond(next, getNewPattern(getNewPattern(pattern, next), next));
+          // Assuming that Index will never be after an Ancestor!!
+          matchSecond(next, getNewPattern(getNewPattern(pattern, next).get(0), next).get(0));
         }
 
         for (Node next : getNext(incomingMatch)) {
-          matchSecond(next, getNewPattern(pattern, next));
+          for(PatternNode[] ptn:  getNewPattern(pattern, next)){
+            matchSecond(next, ptn);
+          }
         }
       } else {
         System.out.println("match");

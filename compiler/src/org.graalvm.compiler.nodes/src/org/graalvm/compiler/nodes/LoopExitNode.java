@@ -56,6 +56,10 @@ public final class LoopExitNode extends BeginStateSplitNode implements IterableN
         loopBegin = loop;
     }
 
+    public LoopExitNode() {
+        super();
+    }
+
     public LoopBeginNode loopBegin() {
         return (LoopBeginNode) loopBegin;
     }

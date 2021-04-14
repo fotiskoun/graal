@@ -83,6 +83,10 @@ public final class LoopEndNode extends AbstractEndNode {
         this.canSafepoint = begin.canEndsSafepoint;
     }
 
+    public LoopEndNode() {
+        super();
+    }
+
     @Override
     public AbstractMergeNode merge() {
         return loopBegin();

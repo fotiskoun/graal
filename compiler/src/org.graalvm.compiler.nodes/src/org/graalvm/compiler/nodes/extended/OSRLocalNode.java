@@ -39,4 +39,7 @@ public final class OSRLocalNode extends AbstractLocalNode implements IterableNod
         super(TYPE, index, stamp);
     }
 
+  public OSRLocalNode() {
+    super();
+  }
 }

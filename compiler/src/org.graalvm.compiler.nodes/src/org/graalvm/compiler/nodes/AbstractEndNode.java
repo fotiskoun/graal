@@ -45,7 +45,10 @@ public abstract class AbstractEndNode extends FixedNode implements LIRLowerable 
         super(c, StampFactory.forVoid());
     }
 
-    @Override
+  public AbstractEndNode() {
+  }
+
+  @Override
     public void generate(NodeLIRBuilderTool gen) {
         gen.visitEndNode(this);
     }

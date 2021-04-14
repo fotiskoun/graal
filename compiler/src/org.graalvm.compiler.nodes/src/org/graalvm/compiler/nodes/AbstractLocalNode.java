@@ -44,7 +44,12 @@ public abstract class AbstractLocalNode extends FloatingNode {
         this.index = index;
     }
 
-    /**
+  public AbstractLocalNode() {
+    super();
+    this.index = 0;
+  }
+
+  /**
      * Gets the index of this local in the array of parameters. This is NOT the JVM local index.
      *
      * @return the index

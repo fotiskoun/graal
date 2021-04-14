@@ -50,7 +50,11 @@ public abstract class BeginStateSplitNode extends AbstractBeginNode implements S
         super(c, stamp);
     }
 
-    @Override
+  public BeginStateSplitNode() {
+    super();
+  }
+
+  @Override
     public FrameState stateAfter() {
         return stateAfter;
     }

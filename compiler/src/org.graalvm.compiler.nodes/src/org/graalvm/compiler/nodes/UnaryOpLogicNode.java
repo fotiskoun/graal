@@ -42,7 +42,11 @@ public abstract class UnaryOpLogicNode extends LogicNode implements LIRLowerable
     public static final NodeClass<UnaryOpLogicNode> TYPE = NodeClass.create(UnaryOpLogicNode.class);
     @Input protected ValueNode value;
 
-    @Override
+  public UnaryOpLogicNode() {
+    super();
+  }
+
+  @Override
     public ValueNode getValue() {
         return value;
     }

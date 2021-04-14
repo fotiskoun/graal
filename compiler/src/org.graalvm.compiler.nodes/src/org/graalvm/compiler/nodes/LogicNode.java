@@ -43,7 +43,11 @@ public abstract class LogicNode extends FloatingNode implements IndirectCanonica
         super(c, StampFactory.forVoid());
     }
 
-    public static LogicNode and(LogicNode a, LogicNode b, double shortCircuitProbability) {
+  public LogicNode() {
+
+  }
+
+  public static LogicNode and(LogicNode a, LogicNode b, double shortCircuitProbability) {
         return and(a, false, b, false, shortCircuitProbability);
     }
 

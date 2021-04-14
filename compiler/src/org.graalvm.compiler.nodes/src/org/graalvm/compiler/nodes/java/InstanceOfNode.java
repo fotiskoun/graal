@@ -87,7 +87,12 @@ public class InstanceOfNode extends UnaryOpLogicNode implements Lowerable {
         assert type() != null;
     }
 
-    public static LogicNode createAllowNull(TypeReference type, ValueNode object, JavaTypeProfile profile, AnchoringNode anchor) {
+  public InstanceOfNode() {
+    super();
+    this.checkedStamp = null;
+  }
+
+  public static LogicNode createAllowNull(TypeReference type, ValueNode object, JavaTypeProfile profile, AnchoringNode anchor) {
         if (StampTool.isPointerNonNull(object)) {
             return create(type, object, profile, anchor);
         }

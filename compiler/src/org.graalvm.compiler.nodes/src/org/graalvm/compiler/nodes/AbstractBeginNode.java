@@ -56,7 +56,11 @@ public abstract class AbstractBeginNode extends FixedWithNextNode implements LIR
         super(c, stamp);
     }
 
-    public static AbstractBeginNode prevBegin(FixedNode from) {
+  public AbstractBeginNode() {
+
+  }
+
+  public static AbstractBeginNode prevBegin(FixedNode from) {
         Node next = from;
         while (next != null) {
             if (next instanceof AbstractBeginNode) {
