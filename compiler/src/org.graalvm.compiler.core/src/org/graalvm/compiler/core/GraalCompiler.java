@@ -24,9 +24,12 @@
  */
 package org.graalvm.compiler.core;
 
+import jdk.vm.ci.meta.JavaKind;
+import jdk.vm.ci.meta.ResolvedJavaType;
 import org.graalvm.compiler.code.CompilationResult;
 import org.graalvm.compiler.core.common.PermanentBailoutException;
 import org.graalvm.compiler.core.common.RetryableBailoutException;
+import org.graalvm.compiler.core.common.type.StampFactory;
 import org.graalvm.compiler.core.common.util.CompilationAlarm;
 import org.graalvm.compiler.core.target.Backend;
 import org.graalvm.compiler.debug.DebugCloseable;
@@ -40,6 +43,7 @@ import org.graalvm.compiler.java.GraphBuilderPhase;
 import org.graalvm.compiler.lir.asm.CompilationResultBuilderFactory;
 import org.graalvm.compiler.lir.phases.LIRSuites;
 import org.graalvm.compiler.nodes.BeginNode;
+import org.graalvm.compiler.nodes.ConstantNode;
 import org.graalvm.compiler.nodes.EndNode;
 import org.graalvm.compiler.nodes.FixedGuardNode;
 import org.graalvm.compiler.nodes.FixedNode;
@@ -47,10 +51,18 @@ import org.graalvm.compiler.nodes.FixedWithNextNode;
 import org.graalvm.compiler.nodes.IfNode;
 import org.graalvm.compiler.nodes.Invoke;
 import org.graalvm.compiler.nodes.InvokeNode;
+import org.graalvm.compiler.nodes.LogicNode;
 import org.graalvm.compiler.nodes.LoopBeginNode;
 import org.graalvm.compiler.nodes.LoopEndNode;
 import org.graalvm.compiler.nodes.LoopExitNode;
+import org.graalvm.compiler.nodes.MergeNode;
+import org.graalvm.compiler.nodes.NodeView;
 import org.graalvm.compiler.nodes.StructuredGraph;
+import org.graalvm.compiler.nodes.ValuePhiNode;
+import org.graalvm.compiler.nodes.ValueProxyNode;
+import org.graalvm.compiler.nodes.calc.AddNode;
+import org.graalvm.compiler.nodes.calc.IntegerEqualsNode;
+import org.graalvm.compiler.nodes.calc.IntegerLessThanNode;
 import org.graalvm.compiler.nodes.extended.OSRLocalNode;
 import org.graalvm.compiler.nodes.graphbuilderconf.GraphBuilderConfiguration;
 import org.graalvm.compiler.nodes.graphbuilderconf.IntrinsicContext;
@@ -58,6 +70,7 @@ import org.graalvm.compiler.nodes.java.ArrayLengthNode;
 import org.graalvm.compiler.nodes.java.InstanceOfNode;
 import org.graalvm.compiler.nodes.java.LoadIndexedNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
+import org.graalvm.compiler.nodes.java.StoreIndexedNode;
 import org.graalvm.compiler.phases.OptimisticOptimizations;
 import org.graalvm.compiler.phases.PhaseSuite;
 import org.graalvm.compiler.phases.common.DeadCodeEliminationPhase;
@@ -74,6 +87,10 @@ import jdk.vm.ci.meta.ResolvedJavaMethod;
 
 import java.util.ArrayList;
 
+import static jdk.vm.ci.meta.DeoptimizationAction.InvalidateReprofile;
+import static jdk.vm.ci.meta.DeoptimizationAction.None;
+import static jdk.vm.ci.meta.DeoptimizationReason.TransferToInterpreter;
+import static jdk.vm.ci.meta.DeoptimizationReason.UnreachedCode;
 import static org.graalvm.compiler.nodes.graphbuilderconf.IntrinsicContext.CompilationContext.INLINE_AFTER_PARSING;
 
 /**
@@ -264,11 +281,80 @@ public class GraalCompiler {
       NodeIterable<Node> graphNodes = graph.getNodes();
       for (Node node : graphNodes) {
         matchSecond(node,
-            /*new PatternNode(new OSRLocalNode()),
+            new PatternNode(new OSRLocalNode()),
             new PatternNode(new InstanceOfNode(), (x) -> {
-              System.out.println("it was called");*/
-            new PatternNode(new NewArrayNode(), (x) -> {
+
               System.out.println("it was called");
+              MergeNode mg478 = (MergeNode) graph.getNode(478);
+              OSRLocalNode osr3 = graph.addOrUnique(new OSRLocalNode(3, StampFactory.forInteger(32)));
+              ValuePhiNode vp492 = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32),
+                      (LoopBeginNode) graph.getNode(157)));
+              vp492.addInput(osr3);
+              vp492.addInput(vp492);
+              ValueProxyNode vp = graph.addWithoutUnique(new ValueProxyNode(vp492, (LoopExitNode) graph.getNode(183)));
+              ValuePhiNode vp482 = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), mg478));
+              vp482.addInput(vp);
+              vp482.addInput(osr3);
+              ResolvedJavaType elementType = providers.getMetaAccess().lookupJavaType(Integer.TYPE);
+              NewArrayNode firstArray = graph.addWithoutUnique(new NewArrayNode(elementType, vp482, true));
+              Node mergeNext = mg478.next();
+              mg478.setNext(firstArray);
+              NewArrayNode secondArray = graph.addWithoutUnique(new NewArrayNode(elementType, vp482, true));
+              firstArray.setNext(secondArray);
+              EndNode eNode = graph.addWithoutUnique(new EndNode());
+              LoopBeginNode lb = graph.add(new LoopBeginNode());
+              lb.addForwardEnd(eNode);
+              ValuePhiNode vp220 = graph.addWithoutUnique(new ValuePhiNode(StampFactory.forInteger(32), lb));
+              ConstantNode cn137 = (ConstantNode) graph.getNode(137);
+              AddNode a251 = graph.addWithoutUnique(new AddNode(vp220, cn137));
+              vp220.addInput(cn137);
+              vp220.addInput(a251);
+              ValuePhiNode vp222 = graph.addWithoutUnique(new ValuePhiNode(StampFactory.forInteger(32), lb));
+              AddNode a247 = graph.addWithoutUnique(new AddNode(cn137, vp222));
+              ConstantNode cn11 = (ConstantNode) graph.getNode(11);
+              vp222.addInput(a247);
+              vp222.addInput(cn11);
+              ConstantNode cn224 = (ConstantNode) graph.getNode(224);
+              AddNode a225 = graph.addWithoutUnique(new AddNode(cn224, vp482));
+              IntegerLessThanNode lt226 = graph.addWithoutUnique(new IntegerLessThanNode(vp222, a225));
+              BeginNode bn244 = graph.add(new BeginNode());
+              LoopExitNode le228 = new LoopExitNode(lb);
+              IfNode if245 = graph.add(new IfNode(lt226, bn244, le228, 0.9));
+              lb.setNext(if245);
+              ValuePhiNode vp485 = (ValuePhiNode) graph.getNode(485);
+              LoadIndexedNode li246 = graph.add(new LoadIndexedNode(null, vp485, vp222, null, JavaKind.Int));
+              LoadIndexedNode li248 = graph.add(new LoadIndexedNode(null, vp485, a247, null, JavaKind.Int));
+              li246.setNext(li248);
+              IntegerEqualsNode i249 = graph.unique(new IntegerEqualsNode(li246, li248));
+              FixedGuardNode fi250 = graph.add(new FixedGuardNode(i249, UnreachedCode, InvalidateReprofile, false));
+              li248.setNext(fi250);
+              LoopEndNode lend253 = graph.add(new LoopEndNode(lb));
+              fi250.setNext(lend253);
+              ValueProxyNode vpr240 = graph.addWithoutUnique(new ValueProxyNode(vp220, le228));
+              AddNode a254 = graph.addWithoutUnique(new AddNode(vp482, cn224));
+              LoadIndexedNode li255 = graph.add(new LoadIndexedNode(null, vp485, a254, null, JavaKind.Int));
+              le228.setNext(li255);
+              StoreIndexedNode st256 = graph.add(new StoreIndexedNode(firstArray, cn11, null, null, JavaKind.Int, li255));
+              li255.setNext(st256);
+              StoreIndexedNode st258 = graph.add(new StoreIndexedNode(secondArray, cn11, null, null, JavaKind.Int, vpr240));
+              st256.setNext(st258);
+             // st258.setNext(mergeNext); //THAT SHOULD COME WHEN WE CREATE IT WITHOUT THE OTHER NODES
+              st258.setNext((FixedNode) graph.getNode(260)); // ALTERNATIVE FOR NOW
+
+
+//              ValuePhiNode arrayPhi = new ValuePhiNode(, graph.getNode(484));
+//              NewArrayNode runsArray = graph.add(new NewArrayNode(providers.getMetaAccess().lookupJavaType(int.class),
+//                  arrayPhi, true));
+//              NewArrayNode lengthArray = graph.add(new NewArrayNode(providers.getMetaAccess().lookupJavaType(int.class),
+//                  arrayPhi, true));
+//              EndNode end = graph.add(new EndNode());
+//              LoopBeginNode lb = graph.add(new LoopBeginNode());
+//              lb.addForwardEnd(end);
+//              PhiNode1
+//            new PatternNode(new NewArrayNode(), (x) -> {
+//              System.out.println("it was called");
               /*Node child = ((FixedWithNextNode) x).next();
               BeginNode b = graph.add(new BeginNode());
               graph.addAfterFixed((FixedWithNextNode) x, b);
@@ -422,7 +508,9 @@ public class GraalCompiler {
     } else if (currentNode instanceof IfNode) {
       result.add(((IfNode) currentNode).trueSuccessor());
       result.add(((IfNode) currentNode).falseSuccessor());
-    } else if (currentNode instanceof EndNode) {
+    } else if (currentNode instanceof EndNode
+                || currentNode instanceof OSRLocalNode
+                || currentNode instanceof InstanceOfNode) {
       for (Node node : currentNode.usages()) {
         result.add(node);
       }
