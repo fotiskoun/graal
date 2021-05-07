@@ -63,6 +63,7 @@ import org.graalvm.compiler.nodes.MergeNode;
 import org.graalvm.compiler.nodes.NodeView;
 import org.graalvm.compiler.nodes.ParameterNode;
 import org.graalvm.compiler.nodes.StartNode;
+import org.graalvm.compiler.nodes.StateSplit;
 import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.nodes.ValuePhiNode;
 import org.graalvm.compiler.nodes.ValueProxyNode;
@@ -114,6 +115,7 @@ public class GraalCompiler {
   private static LambdaFunction lambdaCall;
   private static Node dataNode;
   private static boolean firstTime = true;
+  private static ArrayList<Node> bindNodes = new ArrayList<>();
 
 
   /**
@@ -294,11 +296,12 @@ public class GraalCompiler {
         matchSecond(node,
             new AnyPatternNode(new LoopExitNode(),(x) -> {
               // Duplicate the frame
-              FrameState st = ((StartNode) x).stateAfter().duplicate();
+              // Need to find the best generic class for the stateAfter
+              FrameState st = ((StateSplit) x).stateAfter().duplicate();
               //Keep the connection between start and end node
               EndNode endBeforeLoop = (EndNode) ((FixedWithNextNode) x).next();
 
-              ArrayLengthNode alOfShip = (ArrayLengthNode) getNext(getNext(getNext(x).get(0)).get(0)).get(0);
+              ArrayLengthNode alOfShip = (ArrayLengthNode) bindNodes.get(0);
 
               ArrayLengthNode alForRuns = graph.add(new ArrayLengthNode(alOfShip.getValue()));
               ((FixedWithNextNode) x).setNext(alForRuns);
@@ -465,7 +468,7 @@ public class GraalCompiler {
             }),
             new PatternNode(new EndNode()),
             new PatternNode(new LoopBeginNode()),
-            new PatternNode(new ArrayLengthNode()),
+            new PatternNode(new ArrayLengthNode(), true),
             new PatternNode(new IfNode()), new IndexNode(0),
             new PatternNode(new BeginNode()),
             new PatternNode(new LoadIndexedNode()),
@@ -475,6 +478,7 @@ public class GraalCompiler {
         dataNode = null;
         lambdaCall = null;
         firstTime = true;
+        bindNodes.clear();
       }
 
       suites.getSuperHighTier().apply(graph, superHighTierContext);
@@ -510,12 +514,18 @@ public class GraalCompiler {
     // 0 for true successor, 1 for false successor, 2 for both
     public int children;
     LambdaFunction lambda = null;
+    boolean bindNode = false;
 
     PatternNode() {
     }
 
     PatternNode(Node node) {
       this.currentNode = node;
+    }
+
+    PatternNode(Node node, boolean bnd) {
+      this.currentNode = node;
+      this.bindNode = bnd;
     }
 
     PatternNode(Node node, LambdaFunction lbd) {
@@ -660,6 +670,10 @@ public class GraalCompiler {
       System.out.println("no match");
       return;
     } else {
+      // Add the incoming match in the bind nodes
+      if(pattern[0].bindNode){
+        bindNodes.add(incomingMatch);
+      }
       if (pattern.length > 1) {
         if (pattern.length > 2 && pattern[1] instanceof IndexNode) {
           Node next = getNext(incomingMatch).get(((IndexNode) pattern[1]).index);
