@@ -42,6 +42,19 @@ class query6tpch {
 
   public static void loopIteration(int endDate, int startDate, int[] shipdate,
                                    int[] discount, int[] quantity, int[] extendedprice) {
+//    int[] compressedRun = new int[shipdate.length];
+//    int[] compressedLength = new int[shipdate.length];
+//    int compRaw = 1;
+//    compressedRun[0] = shipdate[0];
+//    compressedLength[0] = 0;
+//    for (int r = 1; r < shipdate.length; r++) {
+//      if(shipdate[r] != shipdate[r-1]){
+//        compressedRun[compRaw] = shipdate[r];
+//        compressedLength[compRaw] = r;
+//        compRaw++;
+//      }
+//    }
+
     long sum = 0;
     for (int i = 0; i < shipdate.length; i++) {
       if (shipdate[i] <= endDate) {
