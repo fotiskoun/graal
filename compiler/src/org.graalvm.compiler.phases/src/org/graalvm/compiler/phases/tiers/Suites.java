@@ -34,6 +34,7 @@ import org.graalvm.compiler.phases.PhaseSuite;
 
 public final class Suites {
 
+    private final PhaseSuite<SuperHighTierContext> superHighTier;
     private final PhaseSuite<HighTierContext> highTier;
     private final PhaseSuite<MidTierContext> midTier;
     private final PhaseSuite<LowTierContext> lowTier;
@@ -41,6 +42,10 @@ public final class Suites {
 
     public PhaseSuite<HighTierContext> getHighTier() {
         return highTier;
+    }
+
+    public PhaseSuite<SuperHighTierContext> getSuperHighTier() {
+        return superHighTier;
     }
 
     public PhaseSuite<MidTierContext> getMidTier() {
@@ -51,14 +56,15 @@ public final class Suites {
         return lowTier;
     }
 
-    public Suites(PhaseSuite<HighTierContext> highTier, PhaseSuite<MidTierContext> midTier, PhaseSuite<LowTierContext> lowTier) {
+    public Suites(PhaseSuite<SuperHighTierContext> superHighTier, PhaseSuite<HighTierContext> highTier, PhaseSuite<MidTierContext> midTier, PhaseSuite<LowTierContext> lowTier) {
+        this.superHighTier = superHighTier;
         this.highTier = highTier;
         this.midTier = midTier;
         this.lowTier = lowTier;
     }
 
     public static Suites createSuites(CompilerConfiguration config, OptionValues options) {
-        return new Suites(config.createHighTier(options), config.createMidTier(options), config.createLowTier(options));
+        return new Suites(config.createSuperHighTier(options), config.createHighTier(options), config.createMidTier(options), config.createLowTier(options));
     }
 
     public static LIRSuites createLIRSuites(CompilerConfiguration config, OptionValues options) {
@@ -97,6 +103,6 @@ public final class Suites {
     }
 
     public Suites copy() {
-        return new Suites(highTier.copy(), midTier.copy(), lowTier.copy());
+        return new Suites(superHighTier.copy(), highTier.copy(), midTier.copy(), lowTier.copy());
     }
 }

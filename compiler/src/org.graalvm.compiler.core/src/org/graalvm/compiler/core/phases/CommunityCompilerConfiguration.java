@@ -37,11 +37,17 @@ import org.graalvm.compiler.phases.tiers.CompilerConfiguration;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
 import org.graalvm.compiler.phases.tiers.LowTierContext;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
+import org.graalvm.compiler.phases.tiers.SuperHighTierContext;
 
 /**
  * The default configuration for the community edition of Graal.
  */
 public class CommunityCompilerConfiguration implements CompilerConfiguration {
+
+    @Override
+    public PhaseSuite<SuperHighTierContext> createSuperHighTier(OptionValues options) {
+        return new SuperHighTier(options);
+    }
 
     @Override
     public PhaseSuite<HighTierContext> createHighTier(OptionValues options) {

@@ -295,7 +295,7 @@ public abstract class Stub {
 
     protected Suites createSuites() {
         Suites defaultSuites = providers.getSuites().getDefaultSuites(options);
-        return new Suites(new PhaseSuite<>(), defaultSuites.getMidTier(), defaultSuites.getLowTier());
+        return new Suites(defaultSuites.getSuperHighTier(), new PhaseSuite<>(), defaultSuites.getMidTier(), defaultSuites.getLowTier());
     }
 
     protected LIRSuites createLIRSuites() {

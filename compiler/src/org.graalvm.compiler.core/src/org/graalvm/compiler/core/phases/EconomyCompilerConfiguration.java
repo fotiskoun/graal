@@ -37,12 +37,18 @@ import org.graalvm.compiler.phases.tiers.CompilerConfiguration;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
 import org.graalvm.compiler.phases.tiers.LowTierContext;
 import org.graalvm.compiler.phases.tiers.MidTierContext;
+import org.graalvm.compiler.phases.tiers.SuperHighTierContext;
 
 /**
  * A compiler configuration that performs fewer Graal IR optimizations while using the same backend
  * as the {@link CommunityCompilerConfiguration}.
  */
 public class EconomyCompilerConfiguration implements CompilerConfiguration {
+
+    @Override
+    public PhaseSuite<SuperHighTierContext> createSuperHighTier(OptionValues options) {
+        return new EconomySuperHighTier(options);
+    }
 
     @Override
     public PhaseSuite<HighTierContext> createHighTier(OptionValues options) {
