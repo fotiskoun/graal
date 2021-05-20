@@ -43,22 +43,48 @@ class query6tpch {
   public static void loopIteration(int endDate, int startDate, int[] shipdate,
                                    int[] discount, int[] quantity, int[] extendedprice) {
 //    int[] compressedRun = new int[shipdate.length];
-//    int[] compressedLength = new int[shipdate.length];
+//    int[] startPosition = new int[shipdate.length];
 //    int compRaw = 1;
 //    compressedRun[0] = shipdate[0];
-//    compressedLength[0] = 0;
+//    startPosition[0] = 0;
 //    for (int r = 1; r < shipdate.length; r++) {
 //      if(shipdate[r] != shipdate[r-1]){
 //        compressedRun[compRaw] = shipdate[r];
-//        compressedLength[compRaw] = r;
+//        startPosition[compRaw] = r;
 //        compRaw++;
 //      }
 //    }
+//
+//    int size = compRaw-1;
 
     long sum = 0;
     for (int i = 0; i < shipdate.length; i++) {
-      if (shipdate[i] <= endDate) {
-        if (shipdate[i] > startDate) {
+//      int shipdateVal = 0; //phi79
+//      boolean foundPred = true; //phi80
+//      if (size == 1)
+//        shipdateVal = compressedRun[0];
+//
+//      // binry search
+//      int left = 0; //phi81
+//      int right = size; //phi82
+//      while (foundPred) {
+//        if (left == right - 1) {
+//          shipdateVal = compressedRun[size - 1];
+//          foundPred = false;
+//        }
+//        int compIndex = (right + left) / 2;
+//        if (i >= startPosition[compIndex - 1] && i < startPosition[compIndex]) {
+//          shipdateVal = compressedRun[compIndex - 1];
+//          foundPred = false;
+//        } else if (i < startPosition[compIndex - 1]) {
+//          right = compIndex;
+//        } else if (i >= startPosition[compIndex]) {
+//          left = compIndex;
+//        }
+//      }
+
+      if (shipdate[i] <= endDate) {//if (shipdateVal <= endDate) {
+        if (shipdate[i] > startDate) {// if (shipdateVal > startDate) {
           if (discount[i] <= 7) {
             if (discount[i] >= 5) {
               if (quantity[i] < 24) {
@@ -70,7 +96,7 @@ class query6tpch {
       }
     }
 
-    System.out.println(sum);
+    System.out.println("reve " + sum);
 
   }
 }
