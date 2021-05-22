@@ -476,8 +476,8 @@ public class GraalCompiler {
               ValuePhiNode compIndexForMerge = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), mergeSuccessors)
               );
-              compIndexForMerge.addInput(compIndexIncrement);
               compIndexForMerge.addInput(compArrayIndex);
+              compIndexForMerge.addInput(compIndexIncrement);
 
               // Add the inputs of the phi node above after implementing the new nodes
               compArrayIndex.addInput(compIndexForMerge);
@@ -778,13 +778,13 @@ public class GraalCompiler {
               mergeAllPredicatesToProduceBinSearchResult.setNext(endBinSearch);
 
               //test it works
-              LoadIndexedNode lin = (LoadIndexedNode) bindNodes.get(8);
-              for (Node n : lin.usages().snapshot()) {
-                if (n instanceof MulNode) {
-                  SubNode sn = graph.addWithoutUnique(new SubNode(((MulNode) n).getX(), ((MulNode) n).getY()));
-                  n.replaceAtUsagesAndDelete(sn);
-                }
-              }
+//              LoadIndexedNode lin = (LoadIndexedNode) bindNodes.get(8);
+//              for (Node n : lin.usages().snapshot()) {
+//                if (n instanceof MulNode) {
+//                  SubNode sn = graph.addWithoutUnique(new SubNode(((MulNode) n).getX(), ((MulNode) n).getY()));
+//                  n.replaceAtUsagesAndDelete(sn);
+//                }
+//              }
 
             }),
             new PatternNode(new EndNode()),

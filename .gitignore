@@ -1,4 +1,6 @@
 *~
+lineitem.tbl
+tpch6*.tbl
 *.aux
 *.bak
 *.bgv
