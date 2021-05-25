@@ -32,29 +32,29 @@ class simpleQuery6 {
   }
 
   public static void loopIteration(int[] discount) {
-    int[] compressedRun = new int[discount.length];
-    int[] startPosition = new int[discount.length];
-    int compRaw = 1;
-    compressedRun[0] = discount[0];
-    startPosition[0] = 0;
-    for (int r = 1; r < discount.length; r++) {
-      if(discount[r] != discount[r-1]){
-        compressedRun[compRaw] = discount[r];
-        startPosition[compRaw] = r;
-        compRaw++;
-      }
-    }
-    startPosition[compRaw] = discount.length;	//to grab the end position
-    int size = compRaw-1;
+//    int[] compressedRun = new int[discount.length];
+//    int[] startPosition = new int[discount.length];
+//    int compRaw = 1;
+//    compressedRun[0] = discount[0];
+//    startPosition[0] = 0;
+//    for (int r = 1; r < discount.length; r++) {
+//      if(discount[r] != discount[r-1]){
+//        compressedRun[compRaw] = discount[r];
+//        startPosition[compRaw] = r;
+//        compRaw++;
+//      }
+//    }
+//    startPosition[compRaw] = discount.length;	//to grab the end position
+//    int size = compRaw-1;
 
     long sum = 0;
-    for (int i = 0; i <= size; i++) {
-//    for (int i = 0; i < discount.length; i++) {
+//    for (int i = 0; i <= size; i++) {
+    for (int i = 0; i < discount.length; i++) {
 
-       if (compressedRun[i] <= 7){
-//      if (discount[i] <= 7) {
-      	      sum += compressedRun[i] * (startPosition[i+1] - startPosition[i]);
-//              sum +=  discount[i];
+//       if (compressedRun[i] <= 7){
+      if (discount[i] <= 7) {
+//      	      sum += compressedRun[i] * (startPosition[i+1] - startPosition[i]);
+              sum +=  discount[i];
       }
     }
 

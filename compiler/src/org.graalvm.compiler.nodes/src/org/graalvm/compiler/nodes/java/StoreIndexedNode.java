@@ -64,6 +64,8 @@ public final class StoreIndexedNode extends AccessIndexedNode implements StateSp
     @Input ValueNode value;
     @OptionalInput(State) FrameState stateAfter;
 
+    public StoreIndexedNode() {}
+
     public GuardingNode getStoreCheck() {
         return storeCheck;
     }

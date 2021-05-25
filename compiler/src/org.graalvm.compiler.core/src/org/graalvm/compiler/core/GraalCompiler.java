@@ -45,6 +45,7 @@ import org.graalvm.compiler.graph.iterators.NodeIterable;
 import org.graalvm.compiler.java.GraphBuilderPhase;
 import org.graalvm.compiler.lir.asm.CompilationResultBuilderFactory;
 import org.graalvm.compiler.lir.phases.LIRSuites;
+import org.graalvm.compiler.nodes.AbstractBeginNode;
 import org.graalvm.compiler.nodes.BeginNode;
 import org.graalvm.compiler.nodes.ConstantNode;
 import org.graalvm.compiler.nodes.EndNode;
@@ -73,6 +74,7 @@ import org.graalvm.compiler.nodes.calc.IntegerEqualsNode;
 import org.graalvm.compiler.nodes.calc.IntegerLessThanNode;
 import org.graalvm.compiler.nodes.calc.MulNode;
 import org.graalvm.compiler.nodes.calc.RightShiftNode;
+import org.graalvm.compiler.nodes.calc.SignExtendNode;
 import org.graalvm.compiler.nodes.calc.SubNode;
 import org.graalvm.compiler.nodes.calc.UnsignedRightShiftNode;
 import org.graalvm.compiler.nodes.extended.OSRLocalNode;
@@ -300,7 +302,7 @@ public class GraalCompiler {
       NodeIterable<Node> graphNodes = graph.getNodes();
       for (Node node : graphNodes) {
         matchSecond(node,
-            new AnyPatternNode(new LoopExitNode(), (x) -> {
+            new AnyPatternNode(new StoreIndexedNode(), (x) -> {
               // Duplicate the frame
               // Need to find the best generic class for the stateAfter
               FrameState st = ((StateSplit) x).stateAfter().duplicate();
@@ -497,8 +499,11 @@ public class GraalCompiler {
               /*53*/
               AddNode decreaseProxyForComp = graph.addWithoutUnique(new AddNode(sendCompressedLength, constantMinus1));
 
+              /*59*/
+              ValuePhiNode iteratorInOperationLoop = (ValuePhiNode) changeTheArrayIterationComparison.getX();
+
               IntegerLessThanNode newOperationLoopComparison =
-                  graph.addOrUnique(new IntegerLessThanNode(decreaseProxyForComp, changeTheArrayIterationComparison.getX()));
+                  graph.addOrUnique(new IntegerLessThanNode(decreaseProxyForComp, iteratorInOperationLoop));
 
               changeTheArrayIterationComparison.replaceAtUsagesAndDelete(newOperationLoopComparison);
 
@@ -510,319 +515,57 @@ public class GraalCompiler {
               operationLoopBegNode.setNext(comparisonToEnterOpLoop);
               alOfShip.safeDelete();
 
+              Node falseTemp = comparisonToEnterOpLoop.falseSuccessor();
+              Node trueTemp =  comparisonToEnterOpLoop.trueSuccessor();
+              comparisonToEnterOpLoop.setFalseSuccessor(null);
+              comparisonToEnterOpLoop.setTrueSuccessor(null);
+              comparisonToEnterOpLoop.setFalseSuccessor((AbstractBeginNode) trueTemp);
+              comparisonToEnterOpLoop.setTrueSuccessor((AbstractBeginNode) falseTemp);
+              comparisonToEnterOpLoop.setTrueSuccessorProbability(1 - comparisonToEnterOpLoop.getTrueSuccessorProbability());
+
+              /*69*/
               LoadIndexedNode loadForPredicate = (LoadIndexedNode)  bindNodes.get(2);
               loadForPredicate.setArray(runsArray);
 
               /*76*/
-              // TODO: Check that it is the node 3
+              // TODO: Check that it is the node 3 in bindNodes list
               LoadIndexedNode loadArrayForSum = (LoadIndexedNode)  bindNodes.get(3);
               loadArrayForSum.setArray(runsArray);
 
               /*86*/
               EndNode endOfSumOperation = (EndNode) loadArrayForSum.next();
 
-              // TODO:Create the two following loadindex and add - and * before SignExtend
+              /*82*/
+              SignExtendNode extendSum = null;
+              for (Node loadUsages: loadArrayForSum.usages().snapshot()){
+                if (loadUsages instanceof  SignExtendNode) {
+                  extendSum = (SignExtendNode) loadUsages;
+                }
+              }
 
+              //Grab the add node of iterator in loop
+              AddNode iteratorIncrease = null;
+              for(Node iteratorUsage: iteratorInOperationLoop.usages().snapshot()){
+                if (iteratorUsage instanceof AddNode){
+                  iteratorIncrease = (AddNode) iteratorUsage;
+                }
+              }
 
+              /*78*/
+              LoadIndexedNode loadNextStartPosition =  graph.add(new LoadIndexedNode(null, startPositionsArray, iteratorIncrease, null, JavaKind.Int));
+              loadArrayForSum.setNext(loadNextStartPosition);
 
+              LoadIndexedNode loadCurrentStartPos =  graph.add(new LoadIndexedNode(null, startPositionsArray, iteratorInOperationLoop, null, JavaKind.Int));
+              loadNextStartPosition.setNext(loadCurrentStartPos);
+              loadCurrentStartPos.setNext(endOfSumOperation);
+
+              /*80*/
+              SubNode findLengthFromStartPositions = graph.addWithoutUnique(new SubNode(loadNextStartPosition, loadCurrentStartPos));
+
+              MulNode runTimesLength = graph.addOrUnique(new MulNode(loadArrayForSum, findLengthFromStartPositions));
+              extendSum.setValue(runTimesLength);
 
               // TODO: Check the Phis and merges
-
-              /*73*/
-//              IntegerEqualsNode compLengthIsOneCheck = graph.addOrUnique(new IntegerEqualsNode(constant2, sendCompressedLength));
-
-//              FixedGuardNode unreachedCompSize1 = graph.add(new FixedGuardNode(compLengthIsOneCheck, UnreachedCode, InvalidateReprofile, true));
-
-              //Pre-existing nodes that are in the patter and should insert binary search
-//              BeginNode begOfOperationLoop = (BeginNode) bindNodes.get(2);
-//              LoadIndexedNode oldStartOfOpLoop = (LoadIndexedNode) begOfOperationLoop.next();
-//              ValuePhiNode operationLoopIterator = (ValuePhiNode) oldStartOfOpLoop.index();/*61*/
-//
-////              begOfOperationLoop.setNext(unreachedCompSize1);
-//
-//              EndNode endSize1UnreachedCode = graph.addWithoutUnique(new EndNode());
-////              unreachedCompSize1.setNext(endSize1UnreachedCode);
-//              begOfOperationLoop.setNext(endSize1UnreachedCode);
-//
-//              // Grab the state of the LoopBegin
-//              LoopBeginNode operationLoop = (LoopBeginNode) bindNodes.get(0);
-//              FrameState stateOpLoop = operationLoop.stateAfter().duplicate();
-//
-//              /*78*/
-//              LoopBeginNode beginBinarySearchLoop = graph.add(new LoopBeginNode());
-//              beginBinarySearchLoop.addForwardEnd(endSize1UnreachedCode);
-//              beginBinarySearchLoop.setStateAfter(stateOpLoop);
-//
-//              /*55*/
-//              AddNode reduceCompLength = graph.addWithoutUnique(new AddNode(sendCompressedLength, constantMinus1));
-//
-//              // Phi Nodes for the variables needed in the bin search
-//              /*79*/
-//              ValuePhiNode valToReplaceTheArray = graph.addWithoutUnique(
-//                  new ValuePhiNode(StampFactory.forInteger(32), beginBinarySearchLoop)
-//              );
-//              valToReplaceTheArray.addInput(constant0);
-//
-//              /*80*/
-//              ValuePhiNode boolToExitLoop = graph.addWithoutUnique(
-//                  new ValuePhiNode(StampFactory.forInteger(32), beginBinarySearchLoop)
-//              );
-//              boolToExitLoop.addInput(constant1);
-//
-//              /*81*/
-//              ValuePhiNode leftIndexForBinSearch = graph.addWithoutUnique(
-//                  new ValuePhiNode(StampFactory.forInteger(32), beginBinarySearchLoop)
-//              );
-//              leftIndexForBinSearch.addInput(constant0);
-//
-//              /*82*/
-//              ValuePhiNode rightIndexForBinSearch = graph.addWithoutUnique(
-//                  new ValuePhiNode(StampFactory.forInteger(32), beginBinarySearchLoop)
-//              );
-//              rightIndexForBinSearch.addInput(reduceCompLength);
-//
-//              IntegerEqualsNode exitCheckBinSearchLoop = graph.addOrUnique(new IntegerEqualsNode(boolToExitLoop, constant0));
-//
-//              BeginNode binSearchCheckFalseSuccessor = graph.add(new BeginNode());
-//              LoopExitNode exitBinSearch = graph.add(new LoopExitNode(beginBinarySearchLoop));
-//              exitBinSearch.setStateAfter(stateOpLoop);
-//
-//              /*93*/
-//              IfNode binSearchLoopChecker = graph.add(new IfNode(exitCheckBinSearchLoop, exitBinSearch, binSearchCheckFalseSuccessor, 0.7));
-//              beginBinarySearchLoop.setNext(binSearchLoopChecker);
-//
-//              //Creation of shipVal ValueProxy and feed the two predicates and remove LoadIndex
-//              // connecting the loop exit with the first guard
-//
-//              ValueProxyNode binSearchResult = graph.addOrUnique(new ValueProxyNode(valToReplaceTheArray, exitBinSearch));
-//
-//              //Fetch the to-be-changed nodes in the op loop due to the array replacement
-//              FixedGuardNode firstGuardInOpLoop = (FixedGuardNode) oldStartOfOpLoop.next();
-//              LoadIndexedNode secondUseOfToBeReplacedArray = (LoadIndexedNode) firstGuardInOpLoop.next();
-//              FixedGuardNode secondGuardInOpLoop = (FixedGuardNode) secondUseOfToBeReplacedArray.next();
-//
-//
-//              oldStartOfOpLoop.setNext(null);
-//              secondUseOfToBeReplacedArray.setNext(null);
-//
-//              //Restore the dataFlow graph edges
-//              exitBinSearch.setNext(firstGuardInOpLoop);
-//              firstGuardInOpLoop.setNext(secondGuardInOpLoop);
-//
-//              //Replace the loadIndexes and change usages
-//              oldStartOfOpLoop.replaceAtUsagesAndDelete(binSearchResult);
-//              secondUseOfToBeReplacedArray.replaceAtUsagesAndDelete(binSearchResult);
-//
-//              AddNode reduceRightIndex = graph.addWithoutUnique(new AddNode(rightIndexForBinSearch, constantMinus1));
-//
-//              IntegerEqualsNode checkEqualityOfRightAndLeftIndex = graph.addOrUnique(new IntegerEqualsNode(leftIndexForBinSearch, reduceRightIndex));
-//
-//              BeginNode foundIndexFalseSucc = graph.add(new BeginNode());
-//              BeginNode foundIndexTrueSucc = graph.add(new BeginNode());
-//
-//              IfNode checkForBinSearchFoundIndex = graph.add(new IfNode(checkEqualityOfRightAndLeftIndex, foundIndexTrueSucc, foundIndexFalseSucc, 0.3));
-//              binSearchCheckFalseSuccessor.setNext(checkForBinSearchFoundIndex);
-//
-//              /*99*/
-//              AddNode valueOfArrayRetrieved = graph.addWithoutUnique(new AddNode(reduceCompLength, constantMinus1));
-//
-//              LoadIndexedNode shipValueFromEqualIndexes = graph.add(new LoadIndexedNode(null, runsArray, valueOfArrayRetrieved, null, JavaKind.Int));
-//              foundIndexTrueSucc.setNext(shipValueFromEqualIndexes);
-//
-//              EndNode endFoundIndexFalseSucc = graph.addWithoutUnique(new EndNode());
-//
-//              foundIndexFalseSucc.setNext(endFoundIndexFalseSucc);
-//
-//              /*102*/
-//              MergeNode mergeIndexComparison = graph.add(new MergeNode());
-//
-//              EndNode endFoundIndexTrueSucc = graph.addWithoutUnique(new EndNode());
-//              shipValueFromEqualIndexes.setNext(endFoundIndexTrueSucc);
-//
-//              mergeIndexComparison.addForwardEnd(endFoundIndexFalseSucc);
-//              mergeIndexComparison.addForwardEnd(endFoundIndexTrueSucc);
-//              mergeIndexComparison.setStateAfter(stateOpLoop);
-//
-//              /*104*/
-//              ValuePhiNode replaceArrayVarAfterIndexMerge = graph.addWithoutUnique(
-//                  new ValuePhiNode(StampFactory.forInteger(32), mergeIndexComparison)
-//              );
-//              replaceArrayVarAfterIndexMerge.addInput(valToReplaceTheArray);
-//              replaceArrayVarAfterIndexMerge.addInput(shipValueFromEqualIndexes);
-//
-//              /*105*/
-//              ValuePhiNode exitBoolAfterIndexMerge = graph.addWithoutUnique(
-//                  new ValuePhiNode(StampFactory.forInteger(32), mergeIndexComparison)
-//              );
-//              exitBoolAfterIndexMerge.addInput(boolToExitLoop);
-//              exitBoolAfterIndexMerge.addInput(constant0);
-//
-//              /*107*/
-//              AddNode addBothIndexes = graph.addWithoutUnique(new AddNode(leftIndexForBinSearch, rightIndexForBinSearch));
-//
-//              RightShiftNode firstShiftOfIndexSum = graph.addWithoutUnique(new RightShiftNode(addBothIndexes, constant31));
-//
-//              UnsignedRightShiftNode unsignedShiftShiftedSum = graph.addWithoutUnique(new UnsignedRightShiftNode(firstShiftOfIndexSum, constant31));
-//
-//              /*111*/
-//              AddNode addShiftAndIndexSum = graph.addWithoutUnique(new AddNode(unsignedShiftShiftedSum, addBothIndexes));
-//
-//              RightShiftNode secondShiftOfIndexSum = graph.addWithoutUnique(new RightShiftNode(addShiftAndIndexSum, constant1));
-//
-//              AddNode reduceIndexForPreviousValue = graph.addWithoutUnique(new AddNode(secondShiftOfIndexSum, constantMinus1));
-//
-//              /*114*/
-//              LoadIndexedNode loadPreviousStartPosition = graph.add(new LoadIndexedNode(null, startPositionsArray, reduceIndexForPreviousValue, null, JavaKind.Int));
-//              mergeIndexComparison.setNext(loadPreviousStartPosition);
-//
-//              IntegerLessThanNode compareStartPosAndIterator = graph.addWithoutUnique(new IntegerLessThanNode(operationLoopIterator, loadPreviousStartPosition));
-//
-//              BeginNode iteratorAndReducedStartPosFalseSucc = graph.add(new BeginNode());
-//              BeginNode iteratorAndReducedStartPosTrueSucc = graph.add(new BeginNode());
-//
-//              /*118*/
-//              IfNode checkIteratorAndReducedStartPos = graph.add(new IfNode(compareStartPosAndIterator, iteratorAndReducedStartPosTrueSucc, iteratorAndReducedStartPosFalseSucc, 0.3));
-//              loadPreviousStartPosition.setNext(checkIteratorAndReducedStartPos);
-//
-//              LoadIndexedNode loadCurrentStartPos = graph.add(new LoadIndexedNode(null, startPositionsArray, secondShiftOfIndexSum, null, JavaKind.Int));
-//              iteratorAndReducedStartPosFalseSucc.setNext(loadCurrentStartPos);
-//
-//              IntegerLessThanNode secondComparisonOfStartPosAndIterator = graph.addWithoutUnique(new IntegerLessThanNode(operationLoopIterator, loadCurrentStartPos));
-//
-//              /*121*/
-//              EndNode endTrueSuccIteratorAndReducedStartPos = graph.addWithoutUnique(new EndNode());
-//              iteratorAndReducedStartPosTrueSucc.setNext(endTrueSuccIteratorAndReducedStartPos);
-//
-//              /*124*/
-//              BeginNode iteratorAndCurrentPosTrueSucc = graph.add(new BeginNode());
-//              BeginNode iteratorAndCurrentPosFalseSucc = graph.add(new BeginNode());
-//
-//              /*126*/
-//              IfNode checkIteratorAndCurrentPos = graph.add(new IfNode(secondComparisonOfStartPosAndIterator, iteratorAndCurrentPosTrueSucc, iteratorAndCurrentPosFalseSucc, 0.3));
-//              loadCurrentStartPos.setNext(checkIteratorAndCurrentPos);
-//
-//              /*123*/
-//              EndNode endFalseSuccIteratorAndCurrentPos = graph.addWithoutUnique(new EndNode());
-//              iteratorAndCurrentPosFalseSucc.setNext(endFalseSuccIteratorAndCurrentPos);
-//
-//              /*122*/
-//              MergeNode firstMergeOfIteratorAndPos = graph.add(new MergeNode());
-//              firstMergeOfIteratorAndPos.addForwardEnd(endTrueSuccIteratorAndReducedStartPos);
-//              firstMergeOfIteratorAndPos.addForwardEnd(endFalseSuccIteratorAndCurrentPos);
-//              firstMergeOfIteratorAndPos.setStateAfter(stateOpLoop);
-//
-//              /*127*/
-//              LoadIndexedNode loadPotentialReturnValue = graph.add(new LoadIndexedNode(null, runsArray, reduceIndexForPreviousValue, null, JavaKind.Int));
-//              iteratorAndCurrentPosTrueSucc.setNext(loadPotentialReturnValue);
-//
-//              /*130*/
-//              LoadIndexedNode loadPreviousPosForFirstIfElse = graph.add(new LoadIndexedNode(null, startPositionsArray, reduceIndexForPreviousValue, null, JavaKind.Int));
-//              firstMergeOfIteratorAndPos.setNext(loadPreviousPosForFirstIfElse);
-//
-//              IntegerLessThanNode comparisonForFirstIfElse = graph.addWithoutUnique(new IntegerLessThanNode(operationLoopIterator, loadPreviousPosForFirstIfElse));
-//
-//              BeginNode firstIfElseFalseSucc = graph.add(new BeginNode());
-//              BeginNode firstIfElseTrueSucc = graph.add(new BeginNode());
-//
-//              /*134*/
-//              IfNode checkFirstIfElseForRightIndexChange = graph.add(new IfNode(comparisonForFirstIfElse, firstIfElseTrueSucc, firstIfElseFalseSucc, 0.3));
-//              loadPreviousPosForFirstIfElse.setNext(checkFirstIfElseForRightIndexChange);
-//
-//              EndNode endTrueSuccIteratorAndCurrentPos = graph.addWithoutUnique(new EndNode());
-//              loadPotentialReturnValue.setNext(endTrueSuccIteratorAndCurrentPos);
-//
-//              /*137*/
-//              EndNode endTrueSuccOfFirstIfElse = graph.addWithoutUnique(new EndNode());
-//              firstIfElseTrueSucc.setNext(endTrueSuccOfFirstIfElse);
-//
-//              /*141*/
-//              LoadIndexedNode loadCurrentPosForSecondIfElse = graph.add(new LoadIndexedNode(null, startPositionsArray, secondShiftOfIndexSum, null, JavaKind.Int));
-//              firstIfElseFalseSucc.setNext(loadCurrentPosForSecondIfElse);
-//
-//              IntegerLessThanNode comparisonOfSecondIfElse = graph.addWithoutUnique(new IntegerLessThanNode(operationLoopIterator, loadCurrentPosForSecondIfElse));
-//
-////              FixedGuardNode unreachedSecondIfElse = graph.add(new FixedGuardNode(comparisonOfSecondIfElse, UnreachedCode, InvalidateReprofile, true, firstGuardInOpLoop.getNoDeoptSuccessorPosition()));
-////              unreachedCompSize1.setNoDeoptSuccessorPosition(firstGuardInOpLoop.getNoDeoptSuccessorPosition());
-//
-////              loadCurrentPosForSecondIfElse.setNext(unreachedSecondIfElse);
-//
-//              BeginNode beginFalseReplaceGuard = graph.add(new BeginNode());
-//              BeginNode beginTrueReplaceGuard = graph.add(new BeginNode());
-//
-//              IfNode replaceGuard = graph.add(new IfNode(comparisonOfSecondIfElse, beginTrueReplaceGuard, beginFalseReplaceGuard, 0.5));
-//              loadCurrentPosForSecondIfElse.setNext(replaceGuard);
-//
-//              EndNode endFalseSuccOfSecondIfElse = graph.addWithoutUnique(new EndNode());
-//              EndNode endTrueSuccOfSecondIfElse = graph.addWithoutUnique(new EndNode());
-//              beginTrueReplaceGuard.setNext(endTrueSuccOfSecondIfElse);
-//              beginFalseReplaceGuard.setNext(endFalseSuccOfSecondIfElse);
-//
-////              unreachedSecondIfElse.setNext(endFalseSuccOfSecondIfElse);
-//
-//              /*136*/
-//              MergeNode mergeAllPredicatesToProduceBinSearchResult = graph.add(new MergeNode());
-//              mergeAllPredicatesToProduceBinSearchResult.addForwardEnd(endTrueSuccIteratorAndCurrentPos);
-//              mergeAllPredicatesToProduceBinSearchResult.addForwardEnd(endTrueSuccOfFirstIfElse);
-//              mergeAllPredicatesToProduceBinSearchResult.addForwardEnd(endTrueSuccOfSecondIfElse);
-//              mergeAllPredicatesToProduceBinSearchResult.addForwardEnd(endFalseSuccOfSecondIfElse);
-//              mergeAllPredicatesToProduceBinSearchResult.setStateAfter(stateOpLoop);
-//
-//              /*138*/
-//              ValuePhiNode replaceArrayVarAfterFinalBinSearchMerge = graph.addWithoutUnique(
-//                  new ValuePhiNode(StampFactory.forInteger(32), mergeAllPredicatesToProduceBinSearchResult)
-//              );
-//              replaceArrayVarAfterFinalBinSearchMerge.addInput(loadPotentialReturnValue);
-//              replaceArrayVarAfterFinalBinSearchMerge.addInput(replaceArrayVarAfterIndexMerge);
-//              replaceArrayVarAfterFinalBinSearchMerge.addInput(replaceArrayVarAfterIndexMerge);
-//              replaceArrayVarAfterFinalBinSearchMerge.addInput(replaceArrayVarAfterIndexMerge);
-//
-//              valToReplaceTheArray.addInput(replaceArrayVarAfterFinalBinSearchMerge);
-//
-//              /*139*/
-//              ValuePhiNode boolToExitLoopFinalBinSearchMerge = graph.addWithoutUnique(
-//                  new ValuePhiNode(StampFactory.forInteger(32), mergeAllPredicatesToProduceBinSearchResult)
-//              );
-//              boolToExitLoopFinalBinSearchMerge.addInput(constant0);
-//              boolToExitLoopFinalBinSearchMerge.addInput(exitBoolAfterIndexMerge);
-//              boolToExitLoopFinalBinSearchMerge.addInput(exitBoolAfterIndexMerge);
-//              boolToExitLoopFinalBinSearchMerge.addInput(exitBoolAfterIndexMerge);
-//
-//              boolToExitLoop.addInput(boolToExitLoopFinalBinSearchMerge);
-//
-//              /*140*/
-//              ValuePhiNode rightIndexFinalBinSearchMerge = graph.addWithoutUnique(
-//                  new ValuePhiNode(StampFactory.forInteger(32), mergeAllPredicatesToProduceBinSearchResult)
-//              );
-//              rightIndexFinalBinSearchMerge.addInput(rightIndexForBinSearch);
-//              rightIndexFinalBinSearchMerge.addInput(secondShiftOfIndexSum);
-//              rightIndexFinalBinSearchMerge.addInput(rightIndexForBinSearch);
-//              rightIndexFinalBinSearchMerge.addInput(rightIndexForBinSearch);
-//
-//              rightIndexForBinSearch.addInput(rightIndexFinalBinSearchMerge);
-//
-//              /*145*/
-//              ValuePhiNode leftIndexFinalBinSearchMerge = graph.addWithoutUnique(
-//                  new ValuePhiNode(StampFactory.forInteger(32), mergeAllPredicatesToProduceBinSearchResult)
-//              );
-//              leftIndexFinalBinSearchMerge.addInput(leftIndexForBinSearch);
-//              leftIndexFinalBinSearchMerge.addInput(leftIndexForBinSearch);
-//              leftIndexFinalBinSearchMerge.addInput(leftIndexForBinSearch);
-//              leftIndexFinalBinSearchMerge.addInput(secondShiftOfIndexSum);
-//
-//              leftIndexForBinSearch.addInput(leftIndexFinalBinSearchMerge);
-//
-//              /*147*/
-//              LoopEndNode endBinSearch = graph.add(new LoopEndNode(beginBinarySearchLoop));
-//              mergeAllPredicatesToProduceBinSearchResult.setNext(endBinSearch);
-//
-//              //test it works
-//              LoadIndexedNode lin = (LoadIndexedNode) bindNodes.get(8);
-//              for (Node n : lin.usages().snapshot()) {
-//                if (n instanceof MulNode) {
-//                  SubNode sn = graph.addWithoutUnique(new SubNode(((MulNode) n).getX(), ((MulNode) n).getY()));
-//                  n.replaceAtUsagesAndDelete(sn);
-//                }
-//              }
 
             }),
             new PatternNode(new EndNode()),
