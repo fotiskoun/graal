@@ -46,4 +46,8 @@ public abstract class AbstractMemoryCheckpoint extends AbstractStateSplit implem
     protected AbstractMemoryCheckpoint(NodeClass<? extends AbstractMemoryCheckpoint> c, Stamp stamp, FrameState stateAfter) {
         super(c, stamp, stateAfter);
     }
+
+  public AbstractMemoryCheckpoint() {
+    super();
+  }
 }

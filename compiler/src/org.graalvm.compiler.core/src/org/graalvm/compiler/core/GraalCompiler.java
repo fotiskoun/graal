@@ -302,16 +302,25 @@ public class GraalCompiler {
       NodeIterable<Node> graphNodes = graph.getNodes();
       for (Node node : graphNodes) {
         matchSecond(node,
-            new AnyPatternNode(new StoreIndexedNode(), (x) -> {
+            new PatternNode(new StoreIndexedNode()),
+            new PatternNode(new InvokeNode(), (x) -> {
               // Duplicate the frame
               // Need to find the best generic class for the stateAfter
-              FrameState st = ((StateSplit) x).stateAfter().duplicate();
+              Node nodeIncludingFrameState = x;
+              while(!(nodeIncludingFrameState instanceof  StateSplit)){
+                nodeIncludingFrameState = x.predecessor();
+              }
+
+
+              FrameState st = ((StateSplit) nodeIncludingFrameState).stateAfter().duplicate();
               //Keep the connection between start and end node
               EndNode endBeforeLoop = (EndNode) ((FixedWithNextNode) x).next();
 
               ArrayLengthNode alOfShip = (ArrayLengthNode) bindNodes.get(1);
+              ValueNode toBeCompressedArray = ((StoreIndexedNode) x.predecessor()).value();
 
-              ArrayLengthNode alForRuns = graph.add(new ArrayLengthNode(alOfShip.getValue()));
+
+              ArrayLengthNode alForRuns = graph.add(new ArrayLengthNode(toBeCompressedArray));
               ((FixedWithNextNode) x).setNext(alForRuns);
 
               ResolvedJavaType elementType = providers.getMetaAccess().lookupJavaType(Integer.TYPE);
@@ -320,7 +329,7 @@ public class GraalCompiler {
               alForRuns.setNext(runsArray);
 
               /*5*/
-              ArrayLengthNode alForStarPositions = graph.add(new ArrayLengthNode(alOfShip.getValue()));
+              ArrayLengthNode alForStarPositions = graph.add(new ArrayLengthNode(toBeCompressedArray));
               runsArray.setNext(alForStarPositions);
 
               NewArrayNode startPositionsArray = graph.addWithoutUnique(new NewArrayNode(elementType, alForStarPositions, true));
@@ -330,7 +339,7 @@ public class GraalCompiler {
               ConstantNode constant1 = graph.addOrUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forInteger(32)));
               ConstantNode constantMinus1 = graph.addOrUnique(new ConstantNode(JavaConstant.forInt(-1), StampFactory.forInteger(32)));
 
-              LoadIndexedNode liShip0 = graph.add(new LoadIndexedNode(null, alOfShip.getValue(), constant0, null, JavaKind.Int));
+              LoadIndexedNode liShip0 = graph.add(new LoadIndexedNode(null, toBeCompressedArray, constant0, null, JavaKind.Int));
               startPositionsArray.setNext(liShip0);
 
               StoreIndexedNode storeRunsFirstVal = graph.add(new StoreIndexedNode(runsArray,
@@ -361,7 +370,7 @@ public class GraalCompiler {
 
 
               //loop duration
-              ArrayLengthNode alForIteration = graph.add(new ArrayLengthNode(alOfShip.getValue()));
+              ArrayLengthNode alForIteration = graph.add(new ArrayLengthNode(toBeCompressedArray));
               beginCompressionLoop.setNext(alForIteration);
 
               //iteration variable
@@ -391,10 +400,10 @@ public class GraalCompiler {
 
               //continue with the inner loop process
               /*29*/
-              LoadIndexedNode loadCurrentValue = graph.add(new LoadIndexedNode(null, alOfShip.getValue(), iterationVar, null, JavaKind.Int));
+              LoadIndexedNode loadCurrentValue = graph.add(new LoadIndexedNode(null, toBeCompressedArray, iterationVar, null, JavaKind.Int));
               startOfComparison.setNext(loadCurrentValue);
 
-              LoadIndexedNode loadPreviousValue = graph.add(new LoadIndexedNode(null, alOfShip.getValue(), indexMinusForArrayComparison, null, JavaKind.Int));
+              LoadIndexedNode loadPreviousValue = graph.add(new LoadIndexedNode(null, toBeCompressedArray, indexMinusForArrayComparison, null, JavaKind.Int));
               loadCurrentValue.setNext(loadPreviousValue);
 
               //load values for comparison
@@ -413,7 +422,7 @@ public class GraalCompiler {
               ccvTrueSuccessor.setNext(endCcvTrueSuccessor);
 
               /*37*/
-              LoadIndexedNode readNewStoringValue = graph.add(new LoadIndexedNode(null, alOfShip.getValue(), iterationVar, null, JavaKind.Int));
+              LoadIndexedNode readNewStoringValue = graph.add(new LoadIndexedNode(null, toBeCompressedArray, iterationVar, null, JavaKind.Int));
               ccvFalseSuccessor.setNext(readNewStoringValue);
 
               /*17*/
@@ -472,7 +481,7 @@ public class GraalCompiler {
 
               //exit to array operation
               /*50*/
-              ArrayLengthNode alForLastStartPos = graph.add(new ArrayLengthNode(alOfShip.getValue()));
+              ArrayLengthNode alForLastStartPos = graph.add(new ArrayLengthNode(toBeCompressedArray));
               exitComparison.setNext(alForLastStartPos);
 
               /*51*/
@@ -527,9 +536,12 @@ public class GraalCompiler {
               LoadIndexedNode loadForPredicate = (LoadIndexedNode)  bindNodes.get(2);
               loadForPredicate.setArray(runsArray);
 
+              LoadIndexedNode loadForSecondPredicate = (LoadIndexedNode)  bindNodes.get(3);
+              loadForSecondPredicate.setArray(runsArray);
+
               /*76*/
-              // TODO: Check that it is the node 3 in bindNodes list
-              LoadIndexedNode loadArrayForSum = (LoadIndexedNode)  bindNodes.get(3);
+              // TODO: Check that it is the node you get below in bindNodes list
+              LoadIndexedNode loadArrayForSum = (LoadIndexedNode)  bindNodes.get(4);
               loadArrayForSum.setArray(runsArray);
 
               /*86*/
@@ -571,6 +583,9 @@ public class GraalCompiler {
             new PatternNode(new EndNode()),
             new PatternNode(new LoopBeginNode(), true),
             new PatternNode(new ArrayLengthNode(), true),
+            new PatternNode(new IfNode()), new IndexNode(0),
+            new PatternNode(new BeginNode()),
+            new PatternNode(new LoadIndexedNode(), true),
             new PatternNode(new IfNode()), new IndexNode(0),
             new PatternNode(new BeginNode()),
             new PatternNode(new LoadIndexedNode(), true),

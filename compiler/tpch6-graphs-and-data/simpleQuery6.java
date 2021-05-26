@@ -30,6 +30,7 @@ class simpleQuery6 {
       loopIteration(discount);
     }
   }
+  public static void declareToBeCompressedArrays(int[]...  arrays){}
 
   public static void loopIteration(int[] discount) {
 //    int[] compressedRun = new int[discount.length];
@@ -47,14 +48,18 @@ class simpleQuery6 {
 //    startPosition[compRaw] = discount.length;	//to grab the end position
 //    int size = compRaw-1;
 
+    declareToBeCompressedArrays(discount);
+
     long sum = 0;
 //    for (int i = 0; i <= size; i++) {
     for (int i = 0; i < discount.length; i++) {
 
 //       if (compressedRun[i] <= 7){
       if (discount[i] <= 7) {
+        if (discount[i] >= 5) {
 //      	      sum += compressedRun[i] * (startPosition[i+1] - startPosition[i]);
-              sum +=  discount[i];
+          sum += discount[i];
+        }
       }
     }
 

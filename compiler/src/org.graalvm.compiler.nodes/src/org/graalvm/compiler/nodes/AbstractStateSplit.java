@@ -39,7 +39,11 @@ public abstract class AbstractStateSplit extends FixedWithNextNode implements St
     public static final NodeClass<AbstractStateSplit> TYPE = NodeClass.create(AbstractStateSplit.class);
     @OptionalInput(InputType.State) protected FrameState stateAfter;
 
-    @Override
+  public AbstractStateSplit() {
+
+  }
+
+  @Override
     public FrameState stateAfter() {
         return stateAfter;
     }

@@ -112,7 +112,13 @@ public final class InvokeNode extends AbstractMemoryCheckpoint implements Invoke
         this.identity = invoke.getKilledLocationIdentity();
     }
 
-    @Override
+    // Node created for the pattern matching function
+  public InvokeNode() {
+    super();
+    this.identity = null;
+  }
+
+  @Override
     protected void afterClone(Node other) {
         updateInliningLogAfterClone(other);
     }
