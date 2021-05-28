@@ -303,6 +303,7 @@ public class GraalCompiler {
       for (Node node : graphNodes) {
         matchSecond(node,
             new PatternNode(new StoreIndexedNode()),
+            new PatternNode(new StoreIndexedNode()),
             new PatternNode(new InvokeNode(), (x) -> {
               // Duplicate the frame
               // Need to find the best generic class for the stateAfter
@@ -318,181 +319,26 @@ public class GraalCompiler {
 
               ArrayLengthNode alOfShip = (ArrayLengthNode) bindNodes.get(1);
               ValueNode toBeCompressedArray = ((StoreIndexedNode) x.predecessor()).value();
+              ValueNode secondToBeCompressedArray = ((StoreIndexedNode) x.predecessor().predecessor()).value();
 
-
-              ArrayLengthNode alForRuns = graph.add(new ArrayLengthNode(toBeCompressedArray));
-              ((FixedWithNextNode) x).setNext(alForRuns);
-
-              ResolvedJavaType elementType = providers.getMetaAccess().lookupJavaType(Integer.TYPE);
-
-              NewArrayNode runsArray = graph.addWithoutUnique(new NewArrayNode(elementType, alForRuns, true));
-              alForRuns.setNext(runsArray);
-
-              /*5*/
-              ArrayLengthNode alForStarPositions = graph.add(new ArrayLengthNode(toBeCompressedArray));
-              runsArray.setNext(alForStarPositions);
-
-              NewArrayNode startPositionsArray = graph.addWithoutUnique(new NewArrayNode(elementType, alForStarPositions, true));
-              alForStarPositions.setNext(startPositionsArray);
 
               ConstantNode constant0 = graph.addOrUnique(new ConstantNode(JavaConstant.forInt(0), StampFactory.forInteger(32)));
               ConstantNode constant1 = graph.addOrUnique(new ConstantNode(JavaConstant.forInt(1), StampFactory.forInteger(32)));
               ConstantNode constantMinus1 = graph.addOrUnique(new ConstantNode(JavaConstant.forInt(-1), StampFactory.forInteger(32)));
 
-              LoadIndexedNode liShip0 = graph.add(new LoadIndexedNode(null, toBeCompressedArray, constant0, null, JavaKind.Int));
-              startPositionsArray.setNext(liShip0);
-
-              StoreIndexedNode storeRunsFirstVal = graph.add(new StoreIndexedNode(runsArray,
-                  constant0,
-                  null,
-                  null,
-                  JavaKind.Int,
-                  liShip0));
-              liShip0.setNext(storeRunsFirstVal);
-
-              StoreIndexedNode storeLengthsFirstVal = graph.add(new StoreIndexedNode(startPositionsArray,
-                  constant0,
-                  null,
-                  null,
-                  JavaKind.Int,
-                  constant0));
-              storeRunsFirstVal.setNext(storeLengthsFirstVal);
-              storeRunsFirstVal.setStateAfter(st);
-
-              /*15*/
-              EndNode endBeforeCompressionLoop = graph.addWithoutUnique(new EndNode());
-              storeLengthsFirstVal.setNext(endBeforeCompressionLoop);
-              storeLengthsFirstVal.setStateAfter(st);
-
-              LoopBeginNode beginCompressionLoop = graph.add(new LoopBeginNode());
-              beginCompressionLoop.addForwardEnd(endBeforeCompressionLoop);
-              beginCompressionLoop.setStateAfter(st);
+              ResolvedJavaType elementType = providers.getMetaAccess().lookupJavaType(Integer.TYPE);
 
 
-              //loop duration
-              ArrayLengthNode alForIteration = graph.add(new ArrayLengthNode(toBeCompressedArray));
-              beginCompressionLoop.setNext(alForIteration);
+              Node[] compressedArrayReturnNode = createCompressedArrayTransformation(graph, elementType,
+                  st, (FixedWithNextNode) x, toBeCompressedArray, constantMinus1, constant0, constant1);
 
-              //iteration variable
-              /*18*/
-              ValuePhiNode iterationVar = graph.addWithoutUnique(
-                  new ValuePhiNode(StampFactory.forInteger(32), beginCompressionLoop)
-              );
 
-              /*48*/
-              AddNode inputVarIncrement = graph.addWithoutUnique(new AddNode(iterationVar, constant1));
+              NewArrayNode runsArray = (NewArrayNode) compressedArrayReturnNode[0];
+              ArrayLengthNode alForStarPositions = (ArrayLengthNode) compressedArrayReturnNode[1];
+              NewArrayNode startPositionsArray = (NewArrayNode) compressedArrayReturnNode[2];
+              ValueProxyNode sendCompressedLength = (ValueProxyNode) compressedArrayReturnNode[3];
+              StoreIndexedNode storeLastPosition = (StoreIndexedNode) compressedArrayReturnNode[4];
 
-              iterationVar.addInput(constant1);
-              iterationVar.addInput(inputVarIncrement);
-
-              /*31*/
-              AddNode indexMinusForArrayComparison = graph.addWithoutUnique(new AddNode(iterationVar, constantMinus1));
-              IntegerLessThanNode lessThanArrayLength = graph.addWithoutUnique(new IntegerLessThanNode(iterationVar, alForIteration));
-
-              /*27*/
-              BeginNode startOfComparison = graph.add(new BeginNode());
-              LoopExitNode exitComparison = graph.add(new LoopExitNode(beginCompressionLoop));
-              exitComparison.setStateAfter(st);
-
-              IfNode loopCondition = graph.add(new IfNode(lessThanArrayLength, startOfComparison, exitComparison, 0.9));
-
-              alForIteration.setNext(loopCondition);
-
-              //continue with the inner loop process
-              /*29*/
-              LoadIndexedNode loadCurrentValue = graph.add(new LoadIndexedNode(null, toBeCompressedArray, iterationVar, null, JavaKind.Int));
-              startOfComparison.setNext(loadCurrentValue);
-
-              LoadIndexedNode loadPreviousValue = graph.add(new LoadIndexedNode(null, toBeCompressedArray, indexMinusForArrayComparison, null, JavaKind.Int));
-              loadCurrentValue.setNext(loadPreviousValue);
-
-              //load values for comparison
-              IntegerEqualsNode checkConsecutiveValues = graph.addOrUnique(new IntegerEqualsNode(loadCurrentValue, loadPreviousValue));
-              /*34*/
-              BeginNode ccvFalseSuccessor = graph.add(new BeginNode());
-              BeginNode ccvTrueSuccessor = graph.add(new BeginNode());
-
-              //check if two consecutive values are different
-              IfNode consecutiveValuesComparison = graph.add(new IfNode(checkConsecutiveValues, ccvTrueSuccessor, ccvFalseSuccessor, 0.7));
-
-              loadPreviousValue.setNext(consecutiveValuesComparison);
-
-              /*43*/
-              EndNode endCcvTrueSuccessor = graph.addWithoutUnique(new EndNode());
-              ccvTrueSuccessor.setNext(endCcvTrueSuccessor);
-
-              /*37*/
-              LoadIndexedNode readNewStoringValue = graph.add(new LoadIndexedNode(null, toBeCompressedArray, iterationVar, null, JavaKind.Int));
-              ccvFalseSuccessor.setNext(readNewStoringValue);
-
-              /*17*/
-              ValuePhiNode compArrayIndex = graph.addWithoutUnique(
-                  new ValuePhiNode(StampFactory.forInteger(32), beginCompressionLoop)
-              );
-              compArrayIndex.addInput(constant1);
-              //The inputs will come later after initialising the input nodes
-
-              StoreIndexedNode storeNewRunsValue = graph.add(new StoreIndexedNode(runsArray,
-                  compArrayIndex,
-                  null,
-                  null,
-                  JavaKind.Int,
-                  readNewStoringValue));
-              readNewStoringValue.setNext(storeNewRunsValue);
-              storeNewRunsValue.setStateAfter(st);
-
-              StoreIndexedNode storeNewRunsLength = graph.add(new StoreIndexedNode(startPositionsArray,
-                  compArrayIndex,
-                  null,
-                  null,
-                  JavaKind.Int,
-                  iterationVar));
-              storeNewRunsValue.setNext(storeNewRunsLength);
-              storeNewRunsLength.setStateAfter(st);
-
-              EndNode endCcvFalseSuccessor = graph.addWithoutUnique(new EndNode());
-              storeNewRunsLength.setNext(endCcvFalseSuccessor);
-
-              MergeNode mergeSuccessors = graph.add(new MergeNode());
-              mergeSuccessors.addForwardEnd(endCcvTrueSuccessor);
-              mergeSuccessors.addForwardEnd(endCcvFalseSuccessor);
-              mergeSuccessors.setStateAfter(st);
-
-              /*42*/
-              AddNode compIndexIncrement = graph.addWithoutUnique(new AddNode(compArrayIndex, constant1));
-
-              /*46*/
-              ValuePhiNode compIndexForMerge = graph.addWithoutUnique(
-                  new ValuePhiNode(StampFactory.forInteger(32), mergeSuccessors)
-              );
-              compIndexForMerge.addInput(compArrayIndex);
-              compIndexForMerge.addInput(compIndexIncrement);
-
-              // Add the inputs of the phi node above after implementing the new nodes
-              compArrayIndex.addInput(compIndexForMerge);
-
-              LoopEndNode endCompressionLoop = graph.add(new LoopEndNode(beginCompressionLoop));
-
-              // Connect the compression Loop with the begin of the processing loop
-              mergeSuccessors.setNext(endCompressionLoop);
-
-              /*24*/
-              ValueProxyNode sendCompressedLength = graph.addOrUnique(new ValueProxyNode(compArrayIndex, exitComparison));
-
-              //exit to array operation
-              /*50*/
-              ArrayLengthNode alForLastStartPos = graph.add(new ArrayLengthNode(toBeCompressedArray));
-              exitComparison.setNext(alForLastStartPos);
-
-              /*51*/
-              StoreIndexedNode storeLastPosition = graph.add(new StoreIndexedNode(startPositionsArray,
-                  sendCompressedLength,
-                  null,
-                  null,
-                  JavaKind.Int,
-                  alForLastStartPos));
-              alForLastStartPos.setNext(storeLastPosition);
-              storeLastPosition.setStateAfter(st);
 
               storeLastPosition.setNext(endBeforeLoop);
 
@@ -583,6 +429,9 @@ public class GraalCompiler {
             new PatternNode(new EndNode()),
             new PatternNode(new LoopBeginNode(), true),
             new PatternNode(new ArrayLengthNode(), true),
+//            new PatternNode(new IfNode()), new IndexNode(0),
+//            new PatternNode(new BeginNode()),
+//            new PatternNode(new LoadIndexedNode()),
             new PatternNode(new IfNode()), new IndexNode(0),
             new PatternNode(new BeginNode()),
             new PatternNode(new LoadIndexedNode(), true),
@@ -593,6 +442,7 @@ public class GraalCompiler {
             new PatternNode(new LoadIndexedNode(), true),
             new PatternNode(new EndNode()),
             new PatternNode(new MergeNode()),
+//            new PatternNode(new EndNode()),
             new PatternNode(new LoopEndNode()));
         dataNode = null;
         lambdaCall = null;
@@ -626,6 +476,184 @@ public class GraalCompiler {
     } finally {
       graph.checkCancellation();
     }
+  }
+
+  public static Node[] createCompressedArrayTransformation(StructuredGraph graph,
+                                                           ResolvedJavaType elementType,
+                                                           FrameState st,
+                                                           FixedWithNextNode toConnectWithGraph,
+                                                           ValueNode initialArray,
+                                                           ConstantNode constantMinus1,
+                                                           ConstantNode constant0,
+                                                           ConstantNode constant1){
+    ArrayLengthNode alForRuns = graph.add(new ArrayLengthNode(initialArray));
+    toConnectWithGraph.setNext(alForRuns);
+
+    NewArrayNode runsArray = graph.addWithoutUnique(new NewArrayNode(elementType, alForRuns, true));
+    alForRuns.setNext(runsArray);
+
+    /*5*/
+    ArrayLengthNode alForStarPositions = graph.add(new ArrayLengthNode(initialArray));
+    runsArray.setNext(alForStarPositions);
+
+    NewArrayNode startPositionsArray = graph.addWithoutUnique(new NewArrayNode(elementType, alForStarPositions, true));
+    alForStarPositions.setNext(startPositionsArray);
+
+    LoadIndexedNode liShip0 = graph.add(new LoadIndexedNode(null, initialArray, constant0, null, JavaKind.Int));
+    startPositionsArray.setNext(liShip0);
+
+    StoreIndexedNode storeRunsFirstVal = graph.add(new StoreIndexedNode(runsArray,
+        constant0,
+        null,
+        null,
+        JavaKind.Int,
+        liShip0));
+    liShip0.setNext(storeRunsFirstVal);
+
+    StoreIndexedNode storeLengthsFirstVal = graph.add(new StoreIndexedNode(startPositionsArray,
+        constant0,
+        null,
+        null,
+        JavaKind.Int,
+        constant0));
+    storeRunsFirstVal.setNext(storeLengthsFirstVal);
+    storeRunsFirstVal.setStateAfter(st);
+
+    /*15*/
+    EndNode endBeforeCompressionLoop = graph.addWithoutUnique(new EndNode());
+    storeLengthsFirstVal.setNext(endBeforeCompressionLoop);
+    storeLengthsFirstVal.setStateAfter(st);
+
+    LoopBeginNode beginCompressionLoop = graph.add(new LoopBeginNode());
+    beginCompressionLoop.addForwardEnd(endBeforeCompressionLoop);
+    beginCompressionLoop.setStateAfter(st);
+
+    //loop duration
+    ArrayLengthNode alForIteration = graph.add(new ArrayLengthNode(initialArray));
+    beginCompressionLoop.setNext(alForIteration);
+
+    //iteration variable
+    /*18*/
+    ValuePhiNode iterationVar = graph.addWithoutUnique(
+        new ValuePhiNode(StampFactory.forInteger(32), beginCompressionLoop)
+    );
+
+    /*48*/
+    AddNode inputVarIncrement = graph.addWithoutUnique(new AddNode(iterationVar, constant1));
+
+    iterationVar.addInput(constant1);
+    iterationVar.addInput(inputVarIncrement);
+
+    /*31*/
+    AddNode indexMinusForArrayComparison = graph.addWithoutUnique(new AddNode(iterationVar, constantMinus1));
+    IntegerLessThanNode lessThanArrayLength = graph.addWithoutUnique(new IntegerLessThanNode(iterationVar, alForIteration));
+
+    /*27*/
+    BeginNode startOfComparison = graph.add(new BeginNode());
+    LoopExitNode exitComparison = graph.add(new LoopExitNode(beginCompressionLoop));
+    exitComparison.setStateAfter(st);
+
+    IfNode loopCondition = graph.add(new IfNode(lessThanArrayLength, startOfComparison, exitComparison, 0.9));
+
+    alForIteration.setNext(loopCondition);
+
+    //continue with the inner loop process
+    /*29*/
+    LoadIndexedNode loadCurrentValue = graph.add(new LoadIndexedNode(null, initialArray, iterationVar, null, JavaKind.Int));
+    startOfComparison.setNext(loadCurrentValue);
+
+    LoadIndexedNode loadPreviousValue = graph.add(new LoadIndexedNode(null, initialArray, indexMinusForArrayComparison, null, JavaKind.Int));
+    loadCurrentValue.setNext(loadPreviousValue);
+
+    //load values for comparison
+    IntegerEqualsNode checkConsecutiveValues = graph.addOrUnique(new IntegerEqualsNode(loadCurrentValue, loadPreviousValue));
+    /*34*/
+    BeginNode ccvFalseSuccessor = graph.add(new BeginNode());
+    BeginNode ccvTrueSuccessor = graph.add(new BeginNode());
+
+    //check if two consecutive values are different
+    IfNode consecutiveValuesComparison = graph.add(new IfNode(checkConsecutiveValues, ccvTrueSuccessor, ccvFalseSuccessor, 0.7));
+
+    loadPreviousValue.setNext(consecutiveValuesComparison);
+
+    /*43*/
+    EndNode endCcvTrueSuccessor = graph.addWithoutUnique(new EndNode());
+    ccvTrueSuccessor.setNext(endCcvTrueSuccessor);
+
+    /*37*/
+    LoadIndexedNode readNewStoringValue = graph.add(new LoadIndexedNode(null, initialArray, iterationVar, null, JavaKind.Int));
+    ccvFalseSuccessor.setNext(readNewStoringValue);
+
+    /*17*/
+    ValuePhiNode compArrayIndex = graph.addWithoutUnique(
+        new ValuePhiNode(StampFactory.forInteger(32), beginCompressionLoop)
+    );
+    compArrayIndex.addInput(constant1);
+    //The inputs will come later after initialising the input nodes
+
+    StoreIndexedNode storeNewRunsValue = graph.add(new StoreIndexedNode(runsArray,
+        compArrayIndex,
+        null,
+        null,
+        JavaKind.Int,
+        readNewStoringValue));
+    readNewStoringValue.setNext(storeNewRunsValue);
+    storeNewRunsValue.setStateAfter(st);
+
+    StoreIndexedNode storeNewRunsLength = graph.add(new StoreIndexedNode(startPositionsArray,
+        compArrayIndex,
+        null,
+        null,
+        JavaKind.Int,
+        iterationVar));
+    storeNewRunsValue.setNext(storeNewRunsLength);
+    storeNewRunsLength.setStateAfter(st);
+
+    EndNode endCcvFalseSuccessor = graph.addWithoutUnique(new EndNode());
+    storeNewRunsLength.setNext(endCcvFalseSuccessor);
+
+    MergeNode mergeSuccessors = graph.add(new MergeNode());
+    mergeSuccessors.addForwardEnd(endCcvTrueSuccessor);
+    mergeSuccessors.addForwardEnd(endCcvFalseSuccessor);
+    mergeSuccessors.setStateAfter(st);
+
+    /*42*/
+    AddNode compIndexIncrement = graph.addWithoutUnique(new AddNode(compArrayIndex, constant1));
+
+    /*46*/
+    ValuePhiNode compIndexForMerge = graph.addWithoutUnique(
+        new ValuePhiNode(StampFactory.forInteger(32), mergeSuccessors)
+    );
+    compIndexForMerge.addInput(compArrayIndex);
+    compIndexForMerge.addInput(compIndexIncrement);
+
+    // Add the inputs of the phi node above after implementing the new nodes
+    compArrayIndex.addInput(compIndexForMerge);
+
+    LoopEndNode endCompressionLoop = graph.add(new LoopEndNode(beginCompressionLoop));
+
+    // Connect the compression Loop with the begin of the processing loop
+    mergeSuccessors.setNext(endCompressionLoop);
+
+    /*24*/
+    ValueProxyNode sendCompressedLength = graph.addOrUnique(new ValueProxyNode(compArrayIndex, exitComparison));
+
+    //exit to array operation
+    /*50*/
+    ArrayLengthNode alForLastStartPos = graph.add(new ArrayLengthNode(initialArray));
+    exitComparison.setNext(alForLastStartPos);
+
+    /*51*/
+    StoreIndexedNode storeLastPosition = graph.add(new StoreIndexedNode(startPositionsArray,
+        sendCompressedLength,
+        null,
+        null,
+        JavaKind.Int,
+        alForLastStartPos));
+    alForLastStartPos.setNext(storeLastPosition);
+    storeLastPosition.setStateAfter(st);
+
+    return new Node[]{runsArray, alForStarPositions, startPositionsArray, sendCompressedLength, storeLastPosition};
   }
 
   public static class PatternNode {
