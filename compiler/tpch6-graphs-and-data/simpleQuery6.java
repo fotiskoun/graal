@@ -7,10 +7,11 @@ import java.util.Scanner;
 
 class simpleQuery6 {
   public static void main(String[] args) throws FileNotFoundException, ParseException, InterruptedException {
-    File f = new File("./tpch6SortedLineitemDQSE70MB.tbl");
+    File f = new File("./tpch6Accepted.tbl");
     Scanner scnr = new Scanner(f);
     int rowsOftext = 600572;
     int[] discount = new int[rowsOftext];
+    int[] quantity = new int[rowsOftext];
 
     int i = 0;
     while (scnr.hasNextLine() && i < rowsOftext) {
@@ -18,7 +19,7 @@ class simpleQuery6 {
       String[] r = line.split("\\|");
 
       discount[i] = (int) (Float.parseFloat(r[6]) * 100);
-
+      quantity[i] = (int) Float.parseFloat(r[4]);
 
       i++;
     }
@@ -27,38 +28,23 @@ class simpleQuery6 {
     //throwing out the cache clearance loop
 
     for (; ; ) {
-      loopIteration(discount);
+      loopIteration(discount, quantity);
     }
   }
-  public static void declareToBeCompressedArrays(int[]...  arrays){}
 
-  public static void loopIteration(int[] discount) {
-//    int[] compressedRun = new int[discount.length];
-//    int[] startPosition = new int[discount.length];
-//    int compRaw = 1;
-//    compressedRun[0] = discount[0];
-//    startPosition[0] = 0;
-//    for (int r = 1; r < discount.length; r++) {
-//      if(discount[r] != discount[r-1]){
-//        compressedRun[compRaw] = discount[r];
-//        startPosition[compRaw] = r;
-//        compRaw++;
-//      }
-//    }
-//    startPosition[compRaw] = discount.length;	//to grab the end position
-//    int size = compRaw-1;
+  public static void declareToBeCompressedArrays(int[]... arrays) {
+  }
 
-    declareToBeCompressedArrays(discount);
+  public static void loopIteration(int[] discount, int[] quantity) {
+    declareToBeCompressedArrays(quantity, discount);
 
-    long sum = 0;
-//    for (int i = 0; i <= size; i++) {
+    long sum =0;
     for (int i = 0; i < discount.length; i++) {
-
-//       if (compressedRun[i] <= 7){
-      if (discount[i] <= 7) {
-        if (discount[i] >= 5) {
-//      	      sum += compressedRun[i] * (startPosition[i+1] - startPosition[i]);
-          sum += discount[i];
+//      if (quantity[i] <= 24) {
+        if (discount[i] <= 7) {
+          if (discount[i] >= 5) {
+            sum += discount[i];
+//          }
         }
       }
     }
