@@ -7,7 +7,7 @@ import java.util.Scanner;
 
 class compressedSimpleQuery6 {
   public static void main(String[] args) throws FileNotFoundException, ParseException, InterruptedException {
-    File f = new File("./tpch6SortedLineitemDQSE70MB.tbl");
+    File f = new File("./tpch6SortedLineitemDQSE70MB.tbl");/*tpch6Accepted*//*tpch6SortedLineitemDQSE70MB*/
     Scanner scnr = new Scanner(f);
     int rowsOftext = 600572;
     int[] discount = new int[rowsOftext];
@@ -68,30 +68,31 @@ class compressedSimpleQuery6 {
     }
     startQuanPosition[compQuanRaw] = quantity.length;  //to grab the end position
 
-    long sum = 0;
+    long sum = 0;/*118*/
     // iterators to show in the startPosition arrays
-    int quanIterPointer = 0;
-    int discIterPointer = 0;
+    int quanIterPointer = 0;/*119*/
+    int discIterPointer = 0;/*120*/
     // the current values from the compressed arrays
-    int currentQuantity = compressedQuanRun[0];
-    int currentDiscount = compressedDisRun[0];
+    int currentQuantity = compressedQuanRun[0];/*121*/
+    int currentDiscount = compressedDisRun[0];/*122*/
     //the next value from the compressed arrays
-    int nextQuantity = compressedQuanRun[0];
-    int nextDiscount = compressedDisRun[0];
+    int nextQuantity = compressedQuanRun[0];/*123*/
+    int nextDiscount = compressedDisRun[0];/*124*/
     // keep the last iterator
-    int iteratorPointer = 0;
+    int iteratorPointer = 0;/*125*/
     // the next minimum iterator between the arrays
-    int minNextIterator = -1;
+    int minNextIterator = -1;/*126*/
     int length;
 
+    /*i = 127*/
     for (int i = 0; i < discount.length;) {
       boolean hasFinishedQuantity = true;
       boolean hasFinishedDiscount = true;
-      if (quanIterPointer != startQuanPosition.length - 1) {
+      if (quanIterPointer != compQuanRaw) {
         hasFinishedQuantity = false;
         minNextIterator = startQuanPosition[quanIterPointer + 1];
       }
-      if (discIterPointer != startDisPosition.length - 1) {
+      if (discIterPointer != compDisRaw) {
         hasFinishedDiscount = false;
         if (startDisPosition[discIterPointer + 1] < minNextIterator || minNextIterator < 0) {
           minNextIterator = startDisPosition[discIterPointer + 1];

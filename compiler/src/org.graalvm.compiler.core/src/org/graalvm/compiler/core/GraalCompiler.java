@@ -308,10 +308,9 @@ public class GraalCompiler {
               // Duplicate the frame
               // Need to find the best generic class for the stateAfter
               Node nodeIncludingFrameState = x;
-              while(!(nodeIncludingFrameState instanceof  StateSplit)){
+              while (!(nodeIncludingFrameState instanceof StateSplit)) {
                 nodeIncludingFrameState = x.predecessor();
               }
-
 
               FrameState st = ((StateSplit) nodeIncludingFrameState).stateAfter().duplicate();
               //Keep the connection between start and end node
@@ -328,100 +327,537 @@ public class GraalCompiler {
 
               ResolvedJavaType elementType = providers.getMetaAccess().lookupJavaType(Integer.TYPE);
 
-
-              Node[] compressedArrayReturnNode = createCompressedArrayTransformation(graph, elementType,
+              //first compression Array Loop
+              Node[] compressedArrayNodes = createCompressedArrayTransformation(graph, elementType,
                   st, (FixedWithNextNode) x, toBeCompressedArray, constantMinus1, constant0, constant1);
 
 
-              NewArrayNode runsArray = (NewArrayNode) compressedArrayReturnNode[0];
-              ArrayLengthNode alForStarPositions = (ArrayLengthNode) compressedArrayReturnNode[1];
-              NewArrayNode startPositionsArray = (NewArrayNode) compressedArrayReturnNode[2];
-              ValueProxyNode sendCompressedLength = (ValueProxyNode) compressedArrayReturnNode[3];
-              StoreIndexedNode storeLastPosition = (StoreIndexedNode) compressedArrayReturnNode[4];
+              /*16*/
+              NewArrayNode firstRunsArray = (NewArrayNode) compressedArrayNodes[0];
+              ArrayLengthNode firstArrayLengthForStartPos = (ArrayLengthNode) compressedArrayNodes[1]; // TODO: to be deleted as there is no use in the new transf
+              /*18*/
+              NewArrayNode firstStartPosArray = (NewArrayNode) compressedArrayNodes[2];
+              /*34*/
+              ValueProxyNode firstSendProxyLength = (ValueProxyNode) compressedArrayNodes[3];
+              StoreIndexedNode firstStoreEndNode = (StoreIndexedNode) compressedArrayNodes[4];
 
 
-              storeLastPosition.setNext(endBeforeLoop);
+              //second compression Array Loop
+              Node[] secondCompressedArrayNodes = createCompressedArrayTransformation(graph, elementType,
+                  st, firstStoreEndNode, secondToBeCompressedArray, constantMinus1, constant0, constant1);
 
-              // The arrayLength from the pattern is fetched in the beginning
-              /*61*/
-              IntegerLessThanNode changeTheArrayIterationComparison = null;
-              for(Node n :alOfShip.usages().snapshot()){
-                if (n instanceof IntegerLessThanNode ){
-                  changeTheArrayIterationComparison = (IntegerLessThanNode) n;
-                }
-              }
 
-              /*53*/
-              AddNode decreaseProxyForComp = graph.addWithoutUnique(new AddNode(sendCompressedLength, constantMinus1));
-
-              /*59*/
-              ValuePhiNode iteratorInOperationLoop = (ValuePhiNode) changeTheArrayIterationComparison.getX();
-
-              IntegerLessThanNode newOperationLoopComparison =
-                  graph.addOrUnique(new IntegerLessThanNode(decreaseProxyForComp, iteratorInOperationLoop));
-
-              changeTheArrayIterationComparison.replaceAtUsagesAndDelete(newOperationLoopComparison);
-
-              IfNode comparisonToEnterOpLoop = (IfNode) alOfShip.next();
-
-              LoopBeginNode operationLoopBegNode = (LoopBeginNode) bindNodes.get(0);
-
-              alOfShip.setNext(null);
-              operationLoopBegNode.setNext(comparisonToEnterOpLoop);
-              alOfShip.safeDelete();
-
-              Node falseTemp = comparisonToEnterOpLoop.falseSuccessor();
-              Node trueTemp =  comparisonToEnterOpLoop.trueSuccessor();
-              comparisonToEnterOpLoop.setFalseSuccessor(null);
-              comparisonToEnterOpLoop.setTrueSuccessor(null);
-              comparisonToEnterOpLoop.setFalseSuccessor((AbstractBeginNode) trueTemp);
-              comparisonToEnterOpLoop.setTrueSuccessor((AbstractBeginNode) falseTemp);
-              comparisonToEnterOpLoop.setTrueSuccessorProbability(1 - comparisonToEnterOpLoop.getTrueSuccessorProbability());
-
-              /*69*/
-              LoadIndexedNode loadForPredicate = (LoadIndexedNode)  bindNodes.get(2);
-              loadForPredicate.setArray(runsArray);
-
-              LoadIndexedNode loadForSecondPredicate = (LoadIndexedNode)  bindNodes.get(3);
-              loadForSecondPredicate.setArray(runsArray);
-
-              /*76*/
-              // TODO: Check that it is the node you get below in bindNodes list
-              LoadIndexedNode loadArrayForSum = (LoadIndexedNode)  bindNodes.get(4);
-              loadArrayForSum.setArray(runsArray);
-
-              /*86*/
-              EndNode endOfSumOperation = (EndNode) loadArrayForSum.next();
-
+              /*64*/
+              NewArrayNode secondRunsArray = (NewArrayNode) secondCompressedArrayNodes[0];
+              ArrayLengthNode secondArrayLengthForStarPos = (ArrayLengthNode) secondCompressedArrayNodes[1];// TODO: to be deleted as there is no use in the new transf
+              /*66*/
+              NewArrayNode secondStartPosArray = (NewArrayNode) secondCompressedArrayNodes[2];
               /*82*/
-              SignExtendNode extendSum = null;
-              for (Node loadUsages: loadArrayForSum.usages().snapshot()){
-                if (loadUsages instanceof  SignExtendNode) {
-                  extendSum = (SignExtendNode) loadUsages;
+              ValueProxyNode secondSendProxyLength = (ValueProxyNode) secondCompressedArrayNodes[3];
+              StoreIndexedNode secondStoreEndNode = (StoreIndexedNode) secondCompressedArrayNodes[4];
+
+
+
+              /*111*/
+              LoadIndexedNode loadFirstValFirstArrayForCurrent = graph.add(new LoadIndexedNode(null, secondRunsArray, constant0, null, JavaKind.Int));
+              secondStoreEndNode.setNext(loadFirstValFirstArrayForCurrent);
+
+              LoadIndexedNode loadFirstValSecondArrayForCurrent = graph.add(new LoadIndexedNode(null, firstRunsArray, constant0, null, JavaKind.Int));
+              loadFirstValFirstArrayForCurrent.setNext(loadFirstValSecondArrayForCurrent);
+
+              //TODO: check for optimizations by using the same array node in 1st and 3rd LoadIndexed
+              LoadIndexedNode loadFirstValFirstArrayForNext = graph.add(new LoadIndexedNode(null, firstRunsArray, constant0, null, JavaKind.Int));
+              loadFirstValSecondArrayForCurrent.setNext(loadFirstValFirstArrayForNext);
+
+              LoadIndexedNode loadFirstValSecondArrayForNext = graph.add(new LoadIndexedNode(null, firstRunsArray, constant0, null, JavaKind.Int));
+              loadFirstValFirstArrayForNext.setNext(loadFirstValSecondArrayForNext);
+
+              loadFirstValSecondArrayForNext.setNext(endBeforeLoop);
+
+              /*117*/
+              LoopBeginNode operationLoopBegNode = (LoopBeginNode) bindNodes.get(0);
+              FrameState stateOfOperationLoop = operationLoopBegNode.stateAfter().duplicate();
+
+              /*119*/
+              ValuePhiNode iterationPointerForSecondArray = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
+              );
+              iterationPointerForSecondArray.addInput(constant0);
+
+              /*120*/
+              ValuePhiNode iterationPointerForFirstArray = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
+              );
+              iterationPointerForFirstArray.addInput(constant0);
+
+              /*121*/
+              ValuePhiNode currentValForSecondArray = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
+              );
+              currentValForSecondArray.addInput(loadFirstValFirstArrayForCurrent);
+
+              /*122*/
+              ValuePhiNode currentValForFirstArray = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
+              );
+              currentValForFirstArray.addInput(loadFirstValSecondArrayForCurrent);
+
+              /*123*/
+              ValuePhiNode nextValForSecondArray = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
+              );
+              nextValForSecondArray.addInput(loadFirstValFirstArrayForNext);
+
+              /*124*/
+              ValuePhiNode nextValForFirstArray = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
+              );
+              nextValForFirstArray.addInput(loadFirstValSecondArrayForNext);
+
+              /*125*/
+              ValuePhiNode currentIteratorVal = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
+              );
+              currentIteratorVal.addInput(constant0);
+
+              /*126*/
+              ValuePhiNode nextMinIteratorVal = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
+              );
+              nextMinIteratorVal.addInput(constantMinus1);
+
+              /* old 31 TODO: to be deleted*/
+              LoadIndexedNode loadForFirstPredicateToBeDeleted = (LoadIndexedNode) bindNodes.get(2);
+
+              /*144*/
+              BeginNode startTheOperationLoop = (BeginNode) loadForFirstPredicateToBeDeleted.predecessor();
+
+              /*146*/
+              IntegerEqualsNode conditionToCalculateMinIteratorSecondArray = graph.addOrUnique(new IntegerEqualsNode(secondSendProxyLength, iterationPointerForSecondArray));
+
+              BeginNode begFalseSuccCalculatingMinIterSecondArray = graph.add(new BeginNode());
+              BeginNode begTrueSuccCalculatingMinIterSecondArray = graph.add(new BeginNode());
+
+              IfNode minIteratorSecondArrayCondition = graph.add(new IfNode(conditionToCalculateMinIteratorSecondArray, begTrueSuccCalculatingMinIterSecondArray, begFalseSuccCalculatingMinIterSecondArray, 0.1));
+              startTheOperationLoop.setNext(minIteratorSecondArrayCondition);
+
+              AddNode increaseSecondArrIterPointer = graph.addWithoutUnique(new AddNode(iterationPointerForSecondArray, constant1));
+
+              /*151*/
+              LoadIndexedNode loadSecondArrayNextStartPos = graph.add(new LoadIndexedNode(null, secondStartPosArray, increaseSecondArrIterPointer, null, JavaKind.Int));
+              begFalseSuccCalculatingMinIterSecondArray.setNext(loadSecondArrayNextStartPos);
+
+              /*152*/
+              EndNode endTrueSuccessorCalculatingMinIterSecondArr = graph.addWithoutUnique(new EndNode());
+              begTrueSuccCalculatingMinIterSecondArray.setNext(endTrueSuccessorCalculatingMinIterSecondArr);
+
+              /*154*/
+              EndNode endFalseSuccessorCalculatingMinIterSecondArr = graph.addWithoutUnique(new EndNode());
+              loadSecondArrayNextStartPos.setNext(endFalseSuccessorCalculatingMinIterSecondArr);
+
+              /*153*/
+              MergeNode mergeCalculatingMinIterSecondArraySuccessors = graph.add(new MergeNode());
+              mergeCalculatingMinIterSecondArraySuccessors.addForwardEnd(endTrueSuccessorCalculatingMinIterSecondArr);
+              mergeCalculatingMinIterSecondArraySuccessors.addForwardEnd(endFalseSuccessorCalculatingMinIterSecondArr);
+              mergeCalculatingMinIterSecondArraySuccessors.setStateAfter(stateOfOperationLoop);
+
+              /*155*/
+              ValuePhiNode nextMinIteratorValForSecondArrayMergeCalc = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), mergeCalculatingMinIterSecondArraySuccessors)
+              );
+              nextMinIteratorValForSecondArrayMergeCalc.addInput(nextMinIteratorVal);
+              nextMinIteratorValForSecondArrayMergeCalc.addInput(loadSecondArrayNextStartPos);
+
+              /*156*/
+              ValuePhiNode finishSecondArrayBoolean = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), mergeCalculatingMinIterSecondArraySuccessors)
+              );
+              finishSecondArrayBoolean.addInput(constant1);
+              finishSecondArrayBoolean.addInput(constant0);
+
+              /*158*/
+              IntegerEqualsNode conditionToCalculateMinIteratorFirstArray = graph.addOrUnique(new IntegerEqualsNode(firstSendProxyLength, iterationPointerForFirstArray));
+
+              BeginNode begFalseSuccCalculatingMinIterFirstArray = graph.add(new BeginNode());
+              BeginNode begTrueSuccCalculatingMinIterFirstArray = graph.add(new BeginNode());
+
+              IfNode minIteratorFirstArrayCondition = graph.add(new IfNode(conditionToCalculateMinIteratorFirstArray, begTrueSuccCalculatingMinIterFirstArray, begFalseSuccCalculatingMinIterFirstArray, 0.1));
+              mergeCalculatingMinIterSecondArraySuccessors.setNext(minIteratorFirstArrayCondition);
+
+              AddNode increaseFirstIterPointer = graph.addWithoutUnique(new AddNode(iterationPointerForFirstArray, constant1));
+
+              /*163*/
+              LoadIndexedNode loadFirstArrayNextStartPos = graph.add(new LoadIndexedNode(null, firstStartPosArray, increaseFirstIterPointer, null, JavaKind.Int));
+              begFalseSuccCalculatingMinIterFirstArray.setNext(loadFirstArrayNextStartPos);
+
+              IntegerLessThanNode conditionFirstArrayStartPosAndMinIter = graph.addWithoutUnique(new IntegerLessThanNode(loadFirstArrayNextStartPos, nextMinIteratorValForSecondArrayMergeCalc));
+
+              BeginNode begFalseSuccForFirstArrayStartAndMInIter = graph.add(new BeginNode());
+              BeginNode begTrueSuccForFirstArrayStartAndMInIter = graph.add(new BeginNode());
+
+              IfNode firstArrayStartAndMinIterCondition = graph.add(new IfNode(conditionFirstArrayStartPosAndMinIter, begTrueSuccForFirstArrayStartAndMInIter, begFalseSuccForFirstArrayStartAndMInIter, 0.5));
+              loadFirstArrayNextStartPos.setNext(firstArrayStartAndMinIterCondition);
+
+              /*168*/
+              IntegerLessThanNode checkMinIteratorLessThanZero = graph.addWithoutUnique(new IntegerLessThanNode(nextMinIteratorValForSecondArrayMergeCalc, constant0));
+
+              EndNode endTrueSuccCalculatingMinIterFirstArray = graph.addWithoutUnique(new EndNode());
+              begTrueSuccCalculatingMinIterFirstArray.setNext(endTrueSuccCalculatingMinIterFirstArray);
+
+              /*173*/
+              EndNode endTrueSuccForFirstArrayStartAndMInIter = graph.addWithoutUnique(new EndNode());
+              begTrueSuccForFirstArrayStartAndMInIter.setNext(endTrueSuccForFirstArrayStartAndMInIter);
+
+              /*176*/
+              BeginNode begTrueSuccForMinIterLessThanZero = graph.add(new BeginNode());
+              BeginNode begFalseSuccForMinIterLessThanZero = graph.add(new BeginNode());
+
+              IfNode minIterLessThanZeroCondition = graph.add(new IfNode(checkMinIteratorLessThanZero, begTrueSuccForMinIterLessThanZero, begFalseSuccForMinIterLessThanZero, 0.1));
+              begFalseSuccForFirstArrayStartAndMInIter.setNext(minIterLessThanZeroCondition);
+
+              /*171*/
+              EndNode endFalseSuccForMinIterLessThanZero = graph.addWithoutUnique(new EndNode());
+              begFalseSuccForMinIterLessThanZero.setNext(endFalseSuccForMinIterLessThanZero);
+              /*175*/
+              EndNode endTrueSuccForMinIterLessThanZero = graph.addWithoutUnique(new EndNode());
+              begTrueSuccForMinIterLessThanZero.setNext(endTrueSuccForMinIterLessThanZero);
+
+              /*174*/
+              MergeNode FirstArrayStartMinIterAndMinIterLessThanZeroTrueAncestorsMerge = graph.add(new MergeNode());
+              FirstArrayStartMinIterAndMinIterLessThanZeroTrueAncestorsMerge.addForwardEnd(endTrueSuccForFirstArrayStartAndMInIter);
+              FirstArrayStartMinIterAndMinIterLessThanZeroTrueAncestorsMerge.addForwardEnd(endTrueSuccForMinIterLessThanZero);
+              FirstArrayStartMinIterAndMinIterLessThanZeroTrueAncestorsMerge.setStateAfter(stateOfOperationLoop);
+
+              /*180*/
+              LoadIndexedNode firstArrayNextStartPosForAssignment = graph.add(new LoadIndexedNode(null, firstStartPosArray, increaseFirstIterPointer, null, JavaKind.Int));
+              FirstArrayStartMinIterAndMinIterLessThanZeroTrueAncestorsMerge.setNext(firstArrayNextStartPosForAssignment);
+
+              EndNode endTrueSuccForMinIterLessThanZeroAfterMinIterAssignment = graph.addWithoutUnique(new EndNode());
+              firstArrayNextStartPosForAssignment.setNext(endTrueSuccForMinIterLessThanZeroAfterMinIterAssignment);
+
+              /*170*/
+              MergeNode mergeTotalFirstArrayStartMinIterAndMinIterLessThanZero = graph.add(new MergeNode());
+              mergeTotalFirstArrayStartMinIterAndMinIterLessThanZero.addForwardEnd(endTrueSuccCalculatingMinIterFirstArray);
+              mergeTotalFirstArrayStartMinIterAndMinIterLessThanZero.addForwardEnd(endFalseSuccForMinIterLessThanZero);
+              mergeTotalFirstArrayStartMinIterAndMinIterLessThanZero.addForwardEnd(endTrueSuccForMinIterLessThanZeroAfterMinIterAssignment);
+              mergeTotalFirstArrayStartMinIterAndMinIterLessThanZero.setStateAfter(stateOfOperationLoop);
+
+              /*172*/
+              ValuePhiNode finishedFirstArrayBooleanAfterFirstArrAndMinIterTotalMerge = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), mergeTotalFirstArrayStartMinIterAndMinIterLessThanZero)
+              );
+              finishedFirstArrayBooleanAfterFirstArrAndMinIterTotalMerge.addInput(constant1);
+              finishedFirstArrayBooleanAfterFirstArrAndMinIterTotalMerge.addInput(constant0);
+              finishedFirstArrayBooleanAfterFirstArrAndMinIterTotalMerge.addInput(constant0);
+
+              /*182*/
+              ValuePhiNode minNextIterAfterFirstArrAndMinIterTotalMerge = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), mergeTotalFirstArrayStartMinIterAndMinIterLessThanZero)
+              );
+              minNextIterAfterFirstArrAndMinIterTotalMerge.addInput(nextMinIteratorValForSecondArrayMergeCalc);
+              minNextIterAfterFirstArrAndMinIterTotalMerge.addInput(nextMinIteratorValForSecondArrayMergeCalc);
+              minNextIterAfterFirstArrAndMinIterTotalMerge.addInput(firstArrayNextStartPosForAssignment);
+
+              currentIteratorVal.addInput(minNextIterAfterFirstArrAndMinIterTotalMerge);
+              nextMinIteratorVal.addInput(minNextIterAfterFirstArrAndMinIterTotalMerge);
+
+              /*184*/
+              IntegerEqualsNode conditionHasFinishedSecondArray = graph.addOrUnique(new IntegerEqualsNode(finishSecondArrayBoolean, constant0));
+
+              BeginNode begFalseHasFinishedSecondArray = graph.add(new BeginNode());
+              BeginNode begTrueHasFinishedSecondArray = graph.add(new BeginNode());
+
+              IfNode hasFinishedSecondArrayCheck = graph.add(new IfNode(conditionHasFinishedSecondArray, begTrueHasFinishedSecondArray, begFalseHasFinishedSecondArray, 0.1));
+              mergeTotalFirstArrayStartMinIterAndMinIterLessThanZero.setNext(hasFinishedSecondArrayCheck);
+
+              /*188*/
+              LoadIndexedNode loadSecondArrNextPosForCondition = graph.add(new LoadIndexedNode(null, secondStartPosArray, increaseSecondArrIterPointer, null, JavaKind.Int));
+              begTrueHasFinishedSecondArray.setNext(loadSecondArrNextPosForCondition);
+
+              IntegerEqualsNode checkSecondArrNextPosAndMinIter = graph.addOrUnique(new IntegerEqualsNode(minNextIterAfterFirstArrAndMinIterTotalMerge, loadSecondArrNextPosForCondition));
+
+              /*193*/
+              BeginNode begTrueSecondArrNextPosAndMinIter = graph.add(new BeginNode());
+              BeginNode begFalseSecondArrNextPosAndMinIter = graph.add(new BeginNode());
+
+              IfNode secondArrNextPosAndMinIterCondition = graph.add(new IfNode(checkSecondArrNextPosAndMinIter, begTrueSecondArrNextPosAndMinIter, begFalseSecondArrNextPosAndMinIter, 0.5));
+              loadSecondArrNextPosForCondition.setNext(secondArrNextPosAndMinIterCondition);
+
+              /*196*/
+              LoadIndexedNode loadSecondRunArrForAssignment = graph.add(new LoadIndexedNode(null, secondRunsArray, increaseSecondArrIterPointer, null, JavaKind.Int));
+              begTrueSecondArrNextPosAndMinIter.setNext(loadSecondRunArrForAssignment);
+
+              EndNode endTrueSecondArrNextPosAndMinIter = graph.addWithoutUnique(new EndNode());
+              loadSecondRunArrForAssignment.setNext(endTrueSecondArrNextPosAndMinIter);
+
+              /*192*/
+              EndNode endFalseSecondArrNextPosAndMinIter = graph.addWithoutUnique(new EndNode());
+              begFalseSecondArrNextPosAndMinIter.setNext(endFalseSecondArrNextPosAndMinIter);
+
+              /*190*/
+              EndNode endFalseHasFinishedSecondArray = graph.addWithoutUnique(new EndNode());
+              begFalseHasFinishedSecondArray.setNext(endFalseHasFinishedSecondArray);
+
+              /*191*/
+              MergeNode mergeSecondArrayNextRunAssignment = graph.add(new MergeNode());
+              mergeSecondArrayNextRunAssignment.addForwardEnd(endFalseHasFinishedSecondArray);
+              mergeSecondArrayNextRunAssignment.addForwardEnd(endFalseSecondArrNextPosAndMinIter);
+              mergeSecondArrayNextRunAssignment.addForwardEnd(endTrueSecondArrNextPosAndMinIter);
+              mergeSecondArrayNextRunAssignment.setStateAfter(stateOfOperationLoop);
+
+              /*198*/
+              ValuePhiNode iterationPointerForSecondArrayAfterNextRunAssignmentMerge = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), mergeSecondArrayNextRunAssignment)
+              );
+              iterationPointerForSecondArrayAfterNextRunAssignmentMerge.addInput(iterationPointerForSecondArray);
+              iterationPointerForSecondArrayAfterNextRunAssignmentMerge.addInput(iterationPointerForSecondArray);
+              iterationPointerForSecondArrayAfterNextRunAssignmentMerge.addInput(increaseSecondArrIterPointer);
+
+              iterationPointerForSecondArray.addInput(iterationPointerForSecondArrayAfterNextRunAssignmentMerge);
+
+              /*199*/
+              ValuePhiNode nextValForSecondArrayAfterNextRunAssignmentMerge = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), mergeSecondArrayNextRunAssignment)
+              );
+              nextValForSecondArrayAfterNextRunAssignmentMerge.addInput(nextValForSecondArray);
+              nextValForSecondArrayAfterNextRunAssignmentMerge.addInput(nextValForSecondArray);
+              nextValForSecondArrayAfterNextRunAssignmentMerge.addInput(loadSecondRunArrForAssignment);
+
+              currentValForSecondArray.addInput(nextValForSecondArrayAfterNextRunAssignmentMerge);
+              nextValForSecondArray.addInput(nextValForSecondArrayAfterNextRunAssignmentMerge);
+
+              /*201*/
+              IntegerEqualsNode conditionHasFinishedFirstArray = graph.addOrUnique(new IntegerEqualsNode(finishedFirstArrayBooleanAfterFirstArrAndMinIterTotalMerge, constant0));
+
+              BeginNode begFalseHasFinishedFirstArray = graph.add(new BeginNode());
+              BeginNode begTrueHasFinishedFirstArray = graph.add(new BeginNode());
+
+              IfNode hasFinishedFirstArrayCheck = graph.add(new IfNode(conditionHasFinishedFirstArray, begTrueHasFinishedFirstArray, begFalseHasFinishedFirstArray, 0.1));
+              mergeSecondArrayNextRunAssignment.setNext(hasFinishedFirstArrayCheck);
+
+              /*205*/
+              LoadIndexedNode loadFirstArrNextPosForCondition = graph.add(new LoadIndexedNode(null, firstStartPosArray, increaseFirstIterPointer, null, JavaKind.Int));
+              begTrueHasFinishedFirstArray.setNext(loadFirstArrNextPosForCondition);
+
+              IntegerEqualsNode checkFirstArrNextPosAndMinIter = graph.addOrUnique(new IntegerEqualsNode(minNextIterAfterFirstArrAndMinIterTotalMerge, loadFirstArrNextPosForCondition));
+
+              /*210*/
+              BeginNode begTrueFirstArrNextPosAndMinIter = graph.add(new BeginNode());
+              BeginNode begFalseFirstArrNextPosAndMinIter = graph.add(new BeginNode());
+
+              IfNode firstArrNextPosAndMinIterCondition = graph.add(new IfNode(checkFirstArrNextPosAndMinIter, begTrueFirstArrNextPosAndMinIter, begFalseFirstArrNextPosAndMinIter, 0.5));
+              loadFirstArrNextPosForCondition.setNext(firstArrNextPosAndMinIterCondition);
+
+              /*213*/
+              LoadIndexedNode loadFirstRunArrForAssignment = graph.add(new LoadIndexedNode(null, firstRunsArray, increaseFirstIterPointer, null, JavaKind.Int));
+              begTrueFirstArrNextPosAndMinIter.setNext(loadFirstRunArrForAssignment);
+
+              /*207*/
+              EndNode endFalseHasFinishedFirstArray = graph.addWithoutUnique(new EndNode());
+              begFalseHasFinishedFirstArray.setNext(endFalseHasFinishedFirstArray);
+
+              /*209*/
+              EndNode endFalseFirstArrNextPosAndMinIter = graph.addWithoutUnique(new EndNode());
+              begFalseFirstArrNextPosAndMinIter.setNext(endFalseFirstArrNextPosAndMinIter);
+
+              /*214*/
+              EndNode endTrueFirstArrNextPosAndMinIter = graph.addWithoutUnique(new EndNode());
+              loadFirstRunArrForAssignment.setNext(endTrueFirstArrNextPosAndMinIter);
+
+              /*208*/
+              MergeNode mergeFirstArrayNextRunAssignment = graph.add(new MergeNode());
+              mergeFirstArrayNextRunAssignment.addForwardEnd(endFalseHasFinishedFirstArray);
+              mergeFirstArrayNextRunAssignment.addForwardEnd(endFalseFirstArrNextPosAndMinIter);
+              mergeFirstArrayNextRunAssignment.addForwardEnd(endTrueFirstArrNextPosAndMinIter);
+              mergeFirstArrayNextRunAssignment.setStateAfter(stateOfOperationLoop);
+
+              /*215*/
+              ValuePhiNode iterationPointerForFirstArrayAfterNextRunAssignmentMerge = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), mergeFirstArrayNextRunAssignment)
+              );
+              iterationPointerForFirstArrayAfterNextRunAssignmentMerge.addInput(iterationPointerForFirstArray);
+              iterationPointerForFirstArrayAfterNextRunAssignmentMerge.addInput(iterationPointerForFirstArray);
+              iterationPointerForFirstArrayAfterNextRunAssignmentMerge.addInput(increaseFirstIterPointer);
+
+              iterationPointerForFirstArray.addInput(iterationPointerForFirstArrayAfterNextRunAssignmentMerge);
+
+              /*216*/
+              ValuePhiNode nextValForFirstArrayAfterNextRunAssignmentMerge = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), mergeFirstArrayNextRunAssignment)
+              );
+              nextValForFirstArrayAfterNextRunAssignmentMerge.addInput(nextValForFirstArray);
+              nextValForFirstArrayAfterNextRunAssignmentMerge.addInput(nextValForFirstArray);
+              nextValForFirstArrayAfterNextRunAssignmentMerge.addInput(loadFirstRunArrForAssignment);
+
+              currentValForFirstArray.addInput(nextValForFirstArrayAfterNextRunAssignmentMerge);
+              nextValForFirstArray.addInput(nextValForFirstArrayAfterNextRunAssignmentMerge);
+
+              /*218*/
+              IntegerEqualsNode conditionMinIterMinusOne = graph.addOrUnique(new IntegerEqualsNode(minNextIterAfterFirstArrAndMinIterTotalMerge, constantMinus1));
+
+              BeginNode begFalseMinIterMinusOne = graph.add(new BeginNode());
+              BeginNode begTrueMinIterMinusOne = graph.add(new BeginNode());
+
+              IfNode MinIterMinusOneCheck = graph.add(new IfNode(conditionMinIterMinusOne, begTrueMinIterMinusOne, begFalseMinIterMinusOne, 0.1));
+              mergeFirstArrayNextRunAssignment.setNext(MinIterMinusOneCheck);
+
+              /*222*/
+              ArrayLengthNode uncompArrayLengthForLastIteration = graph.add(new ArrayLengthNode(toBeCompressedArray));
+              begTrueMinIterMinusOne.setNext(uncompArrayLengthForLastIteration);
+
+              SubNode lengthForLastPositionSubtraction = graph.addWithoutUnique(new SubNode(uncompArrayLengthForLastIteration, currentIteratorVal));
+
+              /*225*/
+              SubNode lengthFromMinIterSubtraction = graph.addWithoutUnique(new SubNode(minNextIterAfterFirstArrAndMinIterTotalMerge, currentIteratorVal));
+
+              /*226*/
+              EndNode endTrueMinIterMinusOne = graph.addWithoutUnique(new EndNode());
+              uncompArrayLengthForLastIteration.setNext(endTrueMinIterMinusOne);
+              /*228*/
+              EndNode endFalseMinIterMinusOne = graph.addWithoutUnique(new EndNode());
+              begFalseMinIterMinusOne.setNext(endFalseMinIterMinusOne);
+
+              /*227*/
+              MergeNode mergeForLength = graph.add(new MergeNode());
+              mergeForLength.addForwardEnd(endTrueMinIterMinusOne);
+              mergeForLength.addForwardEnd(endFalseMinIterMinusOne);
+              mergeForLength.setStateAfter(stateOfOperationLoop);
+
+              /*229*/
+              ValuePhiNode lengthBetweenAlignments = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), mergeForLength)
+              );
+              lengthBetweenAlignments.addInput(lengthForLastPositionSubtraction);
+              lengthBetweenAlignments.addInput(lengthFromMinIterSubtraction);
+
+
+              // get the iterator increase (AddIntegerNode) to change the increasing value
+
+              //Integer less than node which checks the insertion inside the operation loop
+              /*130 old 23*/
+              IntegerLessThanNode conditionArrayIterationComparison = null;
+              for (Node n : alOfShip.usages().snapshot()) {
+                if (n instanceof IntegerLessThanNode) {
+                  conditionArrayIterationComparison = (IntegerLessThanNode) n;
                 }
               }
 
-              //Grab the add node of iterator in loop
+              //Iterator of the Loop 127 old 20
+              ValuePhiNode iteratorInOperationLoop = (ValuePhiNode) conditionArrayIterationComparison.getX();
+              /*251 old 61*/
               AddNode iteratorIncrease = null;
-              for(Node iteratorUsage: iteratorInOperationLoop.usages().snapshot()){
-                if (iteratorUsage instanceof AddNode){
-                  iteratorIncrease = (AddNode) iteratorUsage;
+              for (Node n : iteratorInOperationLoop.inputs().snapshot()) {
+                if (n instanceof AddNode) {
+                  iteratorIncrease = (AddNode) n;
                 }
               }
 
-              /*78*/
-              LoadIndexedNode loadNextStartPosition =  graph.add(new LoadIndexedNode(null, startPositionsArray, iteratorIncrease, null, JavaKind.Int));
-              loadArrayForSum.setNext(loadNextStartPosition);
+              iteratorIncrease.setY(lengthBetweenAlignments);
 
-              LoadIndexedNode loadCurrentStartPos =  graph.add(new LoadIndexedNode(null, startPositionsArray, iteratorInOperationLoop, null, JavaKind.Int));
-              loadNextStartPosition.setNext(loadCurrentStartPos);
-              loadCurrentStartPos.setNext(endOfSumOperation);
+              /*233 old 34*/
+              IntegerLessThanNode firstPredicateCondition = null;
+              for (Node n : loadForFirstPredicateToBeDeleted.usages().snapshot()) {
+                if (n instanceof IntegerLessThanNode) {
+                  firstPredicateCondition = (IntegerLessThanNode) n;
+                }
+              }
 
-              /*80*/
-              SubNode findLengthFromStartPositions = graph.addWithoutUnique(new SubNode(loadNextStartPosition, loadCurrentStartPos));
+              IntegerLessThanNode replaceFirstPredicateCond = graph.addOrUnique(new IntegerLessThanNode(currentValForSecondArray, firstPredicateCondition.getY()));
 
-              MulNode runTimesLength = graph.addOrUnique(new MulNode(loadArrayForSum, findLengthFromStartPositions));
-              extendSum.setValue(runTimesLength);
+              firstPredicateCondition.replaceAtUsagesAndDelete(replaceFirstPredicateCond);
+
+              //Connect the merge end of the alignment process with the predicates and erase LoadIndexed
+              /*236 old 37*/
+              IfNode firstPredicateCheck = (IfNode) loadForFirstPredicateToBeDeleted.next();
+
+              loadForFirstPredicateToBeDeleted.setNext(null);
+              mergeForLength.setNext(firstPredicateCheck);
+              loadForFirstPredicateToBeDeleted.safeDelete();
+
+              /* The process is:
+               * 1) Fetch the LoadIndexedNode from the pattern
+               * 2) Store the predecessor (begin) and next (if) nodes
+               * 3) Fetch the condition node from the LoadIndexed Usages
+               * 4) create a new condition node with the old constant and the new comparison
+               * 5) replaceAtUsagesAndSafeDelete() old condition node with the new
+               * 6) setNext() of LoadIndexed to null
+               * 7) setNext() of predecessor the next node
+               * 8) safeDelete() the LoadIndexed node
+               * TODO: automate the process using a function, check if any nodes
+               *  need to be returned, and then replace the code with the function
+               */
+
+              /*old 38 TODO:to be deleted*/
+              LoadIndexedNode loadSecondPredicateToBeDeleted = (LoadIndexedNode) bindNodes.get(3);
+
+              BeginNode begTrueSuccessorOfSecondPredicate = (BeginNode) loadSecondPredicateToBeDeleted.predecessor();
+              IfNode secondPredicateCheck = (IfNode) loadSecondPredicateToBeDeleted.next();
+
+              /*old 41*/
+              IntegerLessThanNode secondPredicateCondition = null;
+              for (Node n : loadSecondPredicateToBeDeleted.usages().snapshot()) {
+                if (n instanceof IntegerLessThanNode) {
+                  secondPredicateCondition = (IntegerLessThanNode) n;
+                }
+              }
+
+              /*239*/
+              IntegerLessThanNode replaceSecondPredicateCondition = graph.addOrUnique(new IntegerLessThanNode(currentValForFirstArray, secondPredicateCondition.getY()));
+              secondPredicateCondition.replaceAtUsagesAndDelete(replaceSecondPredicateCondition);
+
+              loadSecondPredicateToBeDeleted.setNext(null);
+              begTrueSuccessorOfSecondPredicate.setNext(secondPredicateCheck);
+              loadSecondPredicateToBeDeleted.safeDelete();
+
+
+
+              /*old 48 TODO:to be deleted*/
+              LoadIndexedNode loadThirdPredicateToBeDeleted = (LoadIndexedNode) bindNodes.get(4);
+
+              BeginNode begTrueSuccessorOfThirdPredicate = (BeginNode) loadThirdPredicateToBeDeleted.predecessor();
+              IfNode thirdPredicateCheck = (IfNode) loadThirdPredicateToBeDeleted.next();
+
+              /*old 50*/
+              IntegerLessThanNode thirdPredicateCondition = null;
+              for (Node n : loadThirdPredicateToBeDeleted.usages().snapshot()) {
+                if (n instanceof IntegerLessThanNode) {
+                  thirdPredicateCondition = (IntegerLessThanNode) n;
+                }
+              }
+
+              /*244*/
+              IntegerLessThanNode replaceThirdPredicateCondition = graph.addOrUnique(new IntegerLessThanNode(currentValForFirstArray, thirdPredicateCondition.getY()));
+              thirdPredicateCondition.replaceAtUsagesAndDelete(replaceThirdPredicateCondition);
+
+              loadThirdPredicateToBeDeleted.setNext(null);
+              begTrueSuccessorOfThirdPredicate.setNext(thirdPredicateCheck);
+              loadThirdPredicateToBeDeleted.safeDelete();
+
+              //TODO: replace the last load indexed, fetch its Sign extend Usage
+              // create the multiplication and make any last checks before running
+
+              /*old 55*/
+              LoadIndexedNode loadForSum = (LoadIndexedNode) bindNodes.get(5);
+
+              BeginNode begFalseSuccForArraySum = (BeginNode) loadForSum.predecessor();
+              EndNode endFalseSuccForArraySum = (EndNode) loadForSum.next();
+
+              /*249 old 56*/
+              SignExtendNode extendToFitSumLongVal = null;
+              for (Node n : loadForSum.usages().snapshot()) {
+                if (n instanceof SignExtendNode) {
+                  extendToFitSumLongVal = (SignExtendNode) n;
+                }
+              }
+
+              /*248*/
+              MulNode runTimesLength = graph.addOrUnique(new MulNode(currentValForFirstArray, lengthBetweenAlignments));
+
+              extendToFitSumLongVal.setValue(runTimesLength);
+
+              loadForSum.setNext(null);
+              begFalseSuccForArraySum.setNext(endFalseSuccForArraySum);
+              loadForSum.safeDelete();
 
               // TODO: Check the Phis and merges
 
@@ -429,9 +865,9 @@ public class GraalCompiler {
             new PatternNode(new EndNode()),
             new PatternNode(new LoopBeginNode(), true),
             new PatternNode(new ArrayLengthNode(), true),
-//            new PatternNode(new IfNode()), new IndexNode(0),
-//            new PatternNode(new BeginNode()),
-//            new PatternNode(new LoadIndexedNode()),
+            new PatternNode(new IfNode()), new IndexNode(0),
+            new PatternNode(new BeginNode()),
+            new PatternNode(new LoadIndexedNode(), true),
             new PatternNode(new IfNode()), new IndexNode(0),
             new PatternNode(new BeginNode()),
             new PatternNode(new LoadIndexedNode(), true),
@@ -442,7 +878,6 @@ public class GraalCompiler {
             new PatternNode(new LoadIndexedNode(), true),
             new PatternNode(new EndNode()),
             new PatternNode(new MergeNode()),
-//            new PatternNode(new EndNode()),
             new PatternNode(new LoopEndNode()));
         dataNode = null;
         lambdaCall = null;
@@ -485,7 +920,7 @@ public class GraalCompiler {
                                                            ValueNode initialArray,
                                                            ConstantNode constantMinus1,
                                                            ConstantNode constant0,
-                                                           ConstantNode constant1){
+                                                           ConstantNode constant1) {
     ArrayLengthNode alForRuns = graph.add(new ArrayLengthNode(initialArray));
     toConnectWithGraph.setNext(alForRuns);
 
@@ -829,8 +1264,10 @@ public class GraalCompiler {
         }
 
         for (Node next : getNext(incomingMatch)) {
-          for (PatternNode[] ptn : getNewPattern(pattern, next)) {
-            matchSecond(next, ptn);
+          if (next != null) {
+            for (PatternNode[] ptn : getNewPattern(pattern, next)) {
+              matchSecond(next, ptn);
+            }
           }
         }
       } else {

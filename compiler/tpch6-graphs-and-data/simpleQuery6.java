@@ -7,7 +7,7 @@ import java.util.Scanner;
 
 class simpleQuery6 {
   public static void main(String[] args) throws FileNotFoundException, ParseException, InterruptedException {
-    File f = new File("./tpch6Accepted.tbl");
+    File f = new File("./tpch6SortedLineitemDQSE70MB.tbl");
     Scanner scnr = new Scanner(f);
     int rowsOftext = 600572;
     int[] discount = new int[rowsOftext];
@@ -40,11 +40,11 @@ class simpleQuery6 {
 
     long sum =0;
     for (int i = 0; i < discount.length; i++) {
-//      if (quantity[i] <= 24) {
+      if (quantity[i] <= 24) {
         if (discount[i] <= 7) {
           if (discount[i] >= 5) {
             sum += discount[i];
-//          }
+          }
         }
       }
     }
