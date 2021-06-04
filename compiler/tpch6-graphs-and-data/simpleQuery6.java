@@ -7,7 +7,7 @@ import java.util.Scanner;
 
 class simpleQuery6 {
   public static void main(String[] args) throws FileNotFoundException, ParseException, InterruptedException {
-    File f = new File("./tpch6SortedLineitemDQSE70MB.tbl");
+    File f = new File("./tpch6Accepted.tbl");
     Scanner scnr = new Scanner(f);
     int rowsOftext = 600572;
     int[] discount = new int[rowsOftext];

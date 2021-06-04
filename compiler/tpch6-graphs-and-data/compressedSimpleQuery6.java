@@ -7,7 +7,7 @@ import java.util.Scanner;
 
 class compressedSimpleQuery6 {
   public static void main(String[] args) throws FileNotFoundException, ParseException, InterruptedException {
-    File f = new File("./tpch6SortedLineitemDQSE70MB.tbl");/*tpch6Accepted*//*tpch6SortedLineitemDQSE70MB*/
+    File f = new File("./tpch6Accepted.tbl");/*tpch6Accepted*//*tpch6SortedLineitemDQSE70MB*/
     Scanner scnr = new Scanner(f);
     int rowsOftext = 600572;
     int[] discount = new int[rowsOftext];
@@ -37,21 +37,6 @@ class compressedSimpleQuery6 {
 
   public static void loopIteration(int[] discount, int[] quantity) {
     declareToBeCompressedArrays(quantity, discount);
-    //compress discount Array
-    int[] compressedDisRun = new int[discount.length];
-    int[] startDisPosition = new int[discount.length];
-    int compDisRaw = 1;
-    compressedDisRun[0] = discount[0];
-    startDisPosition[0] = 0;
-    for (int r = 1; r < discount.length; r++) {
-      if (discount[r] != discount[r - 1]) {
-        compressedDisRun[compDisRaw] = discount[r];
-        startDisPosition[compDisRaw] = r;
-        compDisRaw++;
-      }
-    }
-    //to grab the end position
-    startDisPosition[compDisRaw] = discount.length;
 
     //compress quantity Array
     int[] compressedQuanRun = new int[quantity.length];
@@ -68,6 +53,23 @@ class compressedSimpleQuery6 {
     }
     startQuanPosition[compQuanRaw] = quantity.length;  //to grab the end position
 
+    //compress discount Array
+    int[] compressedDisRun = new int[discount.length];
+    int[] startDisPosition = new int[discount.length];
+    int compDisRaw = 1;
+    compressedDisRun[0] = discount[0];
+    startDisPosition[0] = 0;
+    for (int r = 1; r < discount.length; r++) {
+      if (discount[r] != discount[r - 1]) {
+        compressedDisRun[compDisRaw] = discount[r];
+        startDisPosition[compDisRaw] = r;
+        compDisRaw++;
+      }
+    }
+    //to grab the end position
+    startDisPosition[compDisRaw] = discount.length;
+
+
     long sum = 0;/*118*/
     // iterators to show in the startPosition arrays
     int quanIterPointer = 0;/*119*/
@@ -81,17 +83,20 @@ class compressedSimpleQuery6 {
     // keep the last iterator
     int iteratorPointer = 0;/*125*/
     // the next minimum iterator between the arrays
-    int minNextIterator = -1;/*126*/
     int length;
 
     /*i = 127*/
     for (int i = 0; i < discount.length;) {
+      int minNextIterator = -1;/*126*/
       boolean hasFinishedQuantity = true;
       boolean hasFinishedDiscount = true;
       if (quanIterPointer != compQuanRaw) {
         hasFinishedQuantity = false;
-        minNextIterator = startQuanPosition[quanIterPointer + 1];
+        if (startQuanPosition[quanIterPointer + 1] < minNextIterator || minNextIterator < 0) {
+          minNextIterator = startQuanPosition[quanIterPointer + 1];
+        }
       }
+
       if (discIterPointer != compDisRaw) {
         hasFinishedDiscount = false;
         if (startDisPosition[discIterPointer + 1] < minNextIterator || minNextIterator < 0) {
