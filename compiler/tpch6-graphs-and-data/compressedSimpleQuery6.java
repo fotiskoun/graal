@@ -83,23 +83,21 @@ class compressedSimpleQuery6 {
     // keep the last iterator
     int iteratorPointer = 0;/*125*/
     // the next minimum iterator between the arrays
+    int minNextIterator = -1;/*126*/
     int length;
 
     /*i = 127*/
-    for (int i = 0; i < discount.length;) {
-      int minNextIterator = -1;/*126*/
+    for (int i = 0; i < discount.length; ) {
       boolean hasFinishedQuantity = true;
       boolean hasFinishedDiscount = true;
       if (quanIterPointer != compQuanRaw) {
         hasFinishedQuantity = false;
-        if (startQuanPosition[quanIterPointer + 1] < minNextIterator || minNextIterator < 0) {
-          minNextIterator = startQuanPosition[quanIterPointer + 1];
-        }
+        minNextIterator = startQuanPosition[quanIterPointer + 1];
       }
 
       if (discIterPointer != compDisRaw) {
         hasFinishedDiscount = false;
-        if (startDisPosition[discIterPointer + 1] < minNextIterator || minNextIterator < 0) {
+        if (startDisPosition[discIterPointer + 1] < minNextIterator) {
           minNextIterator = startDisPosition[discIterPointer + 1];
         }
       }
@@ -115,7 +113,7 @@ class compressedSimpleQuery6 {
       }
 
       if (minNextIterator == -1) {
-        length = quantity.length - iteratorPointer;
+        length = discount.length - iteratorPointer;
       } else {
         length = minNextIterator - iteratorPointer;
       }
