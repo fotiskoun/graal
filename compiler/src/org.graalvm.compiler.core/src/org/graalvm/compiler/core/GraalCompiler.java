@@ -377,41 +377,32 @@ public class GraalCompiler {
               LoopBeginNode operationLoopBegNode = (LoopBeginNode) bindNodes.get(0);
               FrameState stateOfOperationLoop = operationLoopBegNode.stateAfter().duplicate();
 
-              /*119*/
-              ValuePhiNode iterationPointerForFirstArray = graph.addWithoutUnique(
-                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
-              );
-              iterationPointerForFirstArray.addInput(constant0);
+              // An array of phi nodes to keep the iterationPointers that show to the start positions
+              ValuePhiNode[] iterationPointers = new ValuePhiNode[numberOfArrays];
+              for (int iter = 0; iter < numberOfArrays; iter++){
+                iterationPointers[iter] = graph.addWithoutUnique(
+                    new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
+                );
+                iterationPointers[iter].addInput(constant0);
+              }
 
-              /*120*/
-              ValuePhiNode iterationPointerForSecondArray = graph.addWithoutUnique(
-                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
-              );
-              iterationPointerForSecondArray.addInput(constant0);
+              // An array of phi nodes to keep the compressed values needed for this iteration
+              ValuePhiNode[] currentArrayValues = new ValuePhiNode[numberOfArrays];
+              for (int currentVal = 0; currentVal < numberOfArrays; currentVal++){
+                currentArrayValues[currentVal] = graph.addWithoutUnique(
+                    new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
+                );
+                currentArrayValues[currentVal].addInput(loadValuesArraysForNextAndCurrent[0][currentVal]);
+              }
 
-              /*121*/
-              ValuePhiNode currentValForFirstArray = graph.addWithoutUnique(
-                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
-              );
-              currentValForFirstArray.addInput(loadValuesArraysForNextAndCurrent[0][0]);
-
-              /*122*/
-              ValuePhiNode currentValForSecondArray = graph.addWithoutUnique(
-                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
-              );
-              currentValForSecondArray.addInput(loadValuesArraysForNextAndCurrent[0][1]);
-
-              /*123*/
-              ValuePhiNode nextValForFirstArray = graph.addWithoutUnique(
-                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
-              );
-              nextValForFirstArray.addInput(loadValuesArraysForNextAndCurrent[1][0]);
-
-              /*124*/
-              ValuePhiNode nextValForSecondArray = graph.addWithoutUnique(
-                  new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
-              );
-              nextValForSecondArray.addInput(loadValuesArraysForNextAndCurrent[1][1]);
+              // An array of phi nodes to keep the compressed values fetched using the pointers for the next iteration
+              ValuePhiNode[] nextArrayValues = new ValuePhiNode[numberOfArrays];
+              for (int nextVal = 0; nextVal < numberOfArrays; nextVal++){
+                nextArrayValues[nextVal] = graph.addWithoutUnique(
+                    new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
+                );
+                nextArrayValues[nextVal].addInput(loadValuesArraysForNextAndCurrent[1][nextVal]);
+              }
 
               /*125*/
               ValuePhiNode currentIteratorVal = graph.addWithoutUnique(
@@ -432,7 +423,7 @@ public class GraalCompiler {
               BeginNode startTheOperationLoop = (BeginNode) loadForFirstPredicateToBeDeleted.predecessor();
 
               /*146*/
-              IntegerEqualsNode conditionToCalculateMinIteratorFirArray = graph.addOrUnique(new IntegerEqualsNode((ValueProxyNode) compressedArrayNodes[0][2], iterationPointerForFirstArray));
+              IntegerEqualsNode conditionToCalculateMinIteratorFirArray = graph.addOrUnique(new IntegerEqualsNode((ValueProxyNode) compressedArrayNodes[0][2], iterationPointers[0]));
 
               BeginNode begFalseSuccCalculatingMinIterFirArray = graph.add(new BeginNode());
               BeginNode begTrueSuccCalculatingMinIterFirArray = graph.add(new BeginNode());
@@ -440,7 +431,7 @@ public class GraalCompiler {
               IfNode minIteratorFirArrayCondition = graph.add(new IfNode(conditionToCalculateMinIteratorFirArray, begTrueSuccCalculatingMinIterFirArray, begFalseSuccCalculatingMinIterFirArray, 0.1));
               startTheOperationLoop.setNext(minIteratorFirArrayCondition);
 
-              AddNode increaseFirArrIterPointer = graph.addWithoutUnique(new AddNode(iterationPointerForFirstArray, constant1));
+              AddNode increaseFirArrIterPointer = graph.addWithoutUnique(new AddNode(iterationPointers[0], constant1));
 
               /*151*/
               LoadIndexedNode loadFirArrayNextStartPos = graph.add(new LoadIndexedNode(null, (NewArrayNode) compressedArrayNodes[0][1], increaseFirArrIterPointer, null, JavaKind.Int));
@@ -475,7 +466,7 @@ public class GraalCompiler {
               finishFirArrayBoolean.addInput(constant0);
 
               /*158*/
-              IntegerEqualsNode conditionToCalculateMinIteratorSeconArray = graph.addOrUnique(new IntegerEqualsNode((ValueProxyNode) compressedArrayNodes[1][2], iterationPointerForSecondArray));
+              IntegerEqualsNode conditionToCalculateMinIteratorSeconArray = graph.addOrUnique(new IntegerEqualsNode((ValueProxyNode) compressedArrayNodes[1][2], iterationPointers[1]));
 
               BeginNode begFalseSuccCalculatingMinIterSeconArray = graph.add(new BeginNode());
               BeginNode begTrueSuccCalculatingMinIterSeconArray = graph.add(new BeginNode());
@@ -483,7 +474,7 @@ public class GraalCompiler {
               IfNode minIteratorSeconArrayCondition = graph.add(new IfNode(conditionToCalculateMinIteratorSeconArray, begTrueSuccCalculatingMinIterSeconArray, begFalseSuccCalculatingMinIterSeconArray, 0.1));
               mergeCalculatingMinIterFirArraySuccessors.setNext(minIteratorSeconArrayCondition);
 
-              AddNode increaseSeconIterPointer = graph.addWithoutUnique(new AddNode(iterationPointerForSecondArray, constant1));
+              AddNode increaseSeconIterPointer = graph.addWithoutUnique(new AddNode(iterationPointers[1], constant1));
 
               /*163*/
               LoadIndexedNode loadSeconArrayNextStartPos = graph.add(new LoadIndexedNode(null, (NewArrayNode) compressedArrayNodes[1][1], increaseSeconIterPointer, null, JavaKind.Int));
@@ -590,22 +581,22 @@ public class GraalCompiler {
               ValuePhiNode iterationPointerForFirArrayAfterNextRunAssignmentMerge = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), mergeFirArrayNextRunAssignment)
               );
-              iterationPointerForFirArrayAfterNextRunAssignmentMerge.addInput(iterationPointerForFirstArray);
-              iterationPointerForFirArrayAfterNextRunAssignmentMerge.addInput(iterationPointerForFirstArray);
+              iterationPointerForFirArrayAfterNextRunAssignmentMerge.addInput(iterationPointers[0]);
+              iterationPointerForFirArrayAfterNextRunAssignmentMerge.addInput(iterationPointers[0]);
               iterationPointerForFirArrayAfterNextRunAssignmentMerge.addInput(increaseFirArrIterPointer);
 
-              iterationPointerForFirstArray.addInput(iterationPointerForFirArrayAfterNextRunAssignmentMerge);
+              iterationPointers[0].addInput(iterationPointerForFirArrayAfterNextRunAssignmentMerge);
 
               /*191*/
               ValuePhiNode nextValForFirArrayAfterNextRunAssignmentMerge = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), mergeFirArrayNextRunAssignment)
               );
-              nextValForFirArrayAfterNextRunAssignmentMerge.addInput(nextValForFirstArray);
-              nextValForFirArrayAfterNextRunAssignmentMerge.addInput(nextValForFirstArray);
+              nextValForFirArrayAfterNextRunAssignmentMerge.addInput(nextArrayValues[0]);
+              nextValForFirArrayAfterNextRunAssignmentMerge.addInput(nextArrayValues[0]);
               nextValForFirArrayAfterNextRunAssignmentMerge.addInput(loadFirRunArrForAssignment);
 
-              currentValForFirstArray.addInput(nextValForFirArrayAfterNextRunAssignmentMerge);
-              nextValForFirstArray.addInput(nextValForFirArrayAfterNextRunAssignmentMerge);
+              currentArrayValues[0].addInput(nextValForFirArrayAfterNextRunAssignmentMerge);
+              nextArrayValues[0].addInput(nextValForFirArrayAfterNextRunAssignmentMerge);
 
               /*193*/
               IntegerEqualsNode conditionHasFinishedSeconArray = graph.addOrUnique(new IntegerEqualsNode(finishedSeconArrayBooleanAfterMerge, constant0));
@@ -656,22 +647,22 @@ public class GraalCompiler {
               ValuePhiNode iterationPointerForSeconArrayAfterNextRunAssignmentMerge = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), mergeSeconArrayNextRunAssignment)
               );
-              iterationPointerForSeconArrayAfterNextRunAssignmentMerge.addInput(iterationPointerForSecondArray);
-              iterationPointerForSeconArrayAfterNextRunAssignmentMerge.addInput(iterationPointerForSecondArray);
+              iterationPointerForSeconArrayAfterNextRunAssignmentMerge.addInput(iterationPointers[1]);
+              iterationPointerForSeconArrayAfterNextRunAssignmentMerge.addInput(iterationPointers[1]);
               iterationPointerForSeconArrayAfterNextRunAssignmentMerge.addInput(increaseSeconIterPointer);
 
-              iterationPointerForSecondArray.addInput(iterationPointerForSeconArrayAfterNextRunAssignmentMerge);
+              iterationPointers[1].addInput(iterationPointerForSeconArrayAfterNextRunAssignmentMerge);
 
               /*208*/
               ValuePhiNode nextValForSeconArrayAfterNextRunAssignmentMerge = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), mergeSeconArrayNextRunAssignment)
               );
-              nextValForSeconArrayAfterNextRunAssignmentMerge.addInput(nextValForSecondArray);
-              nextValForSeconArrayAfterNextRunAssignmentMerge.addInput(nextValForSecondArray);
+              nextValForSeconArrayAfterNextRunAssignmentMerge.addInput(nextArrayValues[1]);
+              nextValForSeconArrayAfterNextRunAssignmentMerge.addInput(nextArrayValues[1]);
               nextValForSeconArrayAfterNextRunAssignmentMerge.addInput(loadSeconRunArrForAssignment);
 
-              currentValForSecondArray.addInput(nextValForSeconArrayAfterNextRunAssignmentMerge);
-              nextValForSecondArray.addInput(nextValForSeconArrayAfterNextRunAssignmentMerge);
+              currentArrayValues[1].addInput(nextValForSeconArrayAfterNextRunAssignmentMerge);
+              nextArrayValues[1].addInput(nextValForSeconArrayAfterNextRunAssignmentMerge);
 
               /*210*/
               IntegerEqualsNode conditionMinIterMinusOne = graph.addOrUnique(new IntegerEqualsNode(minNextIterAfterSeconArrAndMinIterMerge, constantMinus1));
@@ -735,33 +726,31 @@ public class GraalCompiler {
               iteratorIncrease.setY(lengthBetweenAlignments);
 
 
+              // The total number of predicates in the operation loop
               int numberOfPredicates = 3; // TODO: find a way to grab the predicates maybe from the pattern?
 
-              LoadIndexedNode[] loadIndexedNodesFromPredicates = new LoadIndexedNode[]{
-                  (LoadIndexedNode) bindNodes.get(2),
-                  (LoadIndexedNode) bindNodes.get(3),
-                  (LoadIndexedNode) bindNodes.get(4)
-              };
+              FixedWithNextNode connectWithPreviousGraph = mergeForLength;
 
-              FixedWithNextNode[] connectWithPreviousGraph = new FixedWithNextNode[]{
-                  mergeForLength,
-                  (FixedWithNextNode) loadIndexedNodesFromPredicates[1].predecessor(),
-                  (FixedWithNextNode) loadIndexedNodesFromPredicates[2].predecessor()
-              };
+              // TODO: this will be replaced by the phis array creation on top
+              ValuePhiNode[] currentValuesForArrays = new ValuePhiNode[]{currentArrayValues[0], currentArrayValues[1]};
 
-              ValuePhiNode[] currentValuesForArrays = new ValuePhiNode[]{currentValForFirstArray, currentValForSecondArray};
-
-              for (int loadInPredicate = 0; loadInPredicate < numberOfPredicates; loadInPredicate++) {
+              for (int predicateLoad = 0; predicateLoad < numberOfPredicates; predicateLoad++) {
+                // Match the LoadIndexed in the predicate with the Array Parameters to locate the correct phi Node
                 int arrayAndLoadMatch = -1;
+                // Iterate through the number of arrays to compare it with the array in the predicate
                 for (int arrayInLoadIndexed = 0; arrayInLoadIndexed < numberOfArrays; arrayInLoadIndexed++) {
-                  if (loadIndexedNodesFromPredicates[loadInPredicate].array().getId() == uncompressedArrayNodes[arrayInLoadIndexed].getId()) {
+                  if (((LoadIndexedNode) bindNodes.get(2+predicateLoad)).array().equals(uncompressedArrayNodes[arrayInLoadIndexed])) {
                     arrayAndLoadMatch = arrayInLoadIndexed;
                     break;
                   }
                 }
+
                 // Use this if in case a predicate does not come from a compressed array
                 if (arrayAndLoadMatch > -1) {
-                  changeTheLoadIndexed(graph, loadIndexedNodesFromPredicates[loadInPredicate], currentValuesForArrays[arrayAndLoadMatch], connectWithPreviousGraph[loadInPredicate]);
+                  changeTheLoadIndexed(graph, (LoadIndexedNode) bindNodes.get(2 + predicateLoad), currentValuesForArrays[arrayAndLoadMatch], connectWithPreviousGraph);
+                  if(predicateLoad<numberOfPredicates-1) {
+                    connectWithPreviousGraph = (FixedWithNextNode) bindNodes.get(2 + predicateLoad + 1).predecessor();
+                  }
                 }
               }
 
@@ -779,8 +768,8 @@ public class GraalCompiler {
                 }
               }
 
-              /*240*/
-              MulNode runTimesLength = graph.addOrUnique(new MulNode(currentValForSecondArray, lengthBetweenAlignments));
+              /*240*/ // TODO: When the full tpch 6 query built this needs to be changed
+              MulNode runTimesLength = graph.addOrUnique(new MulNode(currentArrayValues[1], lengthBetweenAlignments));
 
               extendToFitSumLongVal.setValue(runTimesLength);
 
