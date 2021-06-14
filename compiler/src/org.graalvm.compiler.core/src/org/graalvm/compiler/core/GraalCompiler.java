@@ -45,6 +45,7 @@ import org.graalvm.compiler.lir.phases.LIRSuites;
 import org.graalvm.compiler.nodes.BeginNode;
 import org.graalvm.compiler.nodes.ConstantNode;
 import org.graalvm.compiler.nodes.EndNode;
+import org.graalvm.compiler.nodes.FixedNode;
 import org.graalvm.compiler.nodes.FixedWithNextNode;
 import org.graalvm.compiler.nodes.FrameState;
 import org.graalvm.compiler.nodes.IfNode;
@@ -67,6 +68,7 @@ import org.graalvm.compiler.nodes.calc.SubNode;
 import org.graalvm.compiler.nodes.extended.OSRLocalNode;
 import org.graalvm.compiler.nodes.java.ArrayLengthNode;
 import org.graalvm.compiler.nodes.java.InstanceOfNode;
+import org.graalvm.compiler.nodes.java.LoadFieldNode;
 import org.graalvm.compiler.nodes.java.LoadIndexedNode;
 import org.graalvm.compiler.nodes.java.NewArrayNode;
 import org.graalvm.compiler.nodes.java.StoreIndexedNode;
@@ -297,7 +299,6 @@ public class GraalCompiler {
 
               FrameState st = ((StateSplit) nodeIncludingFrameState).stateAfter().duplicate();
               //Keep the connection between start and end node
-              EndNode endBeforeLoop = (EndNode) ((FixedWithNextNode) x).next();
 
               //Find the amount of compressed arrays
               int numberOfArrays = 0;
@@ -327,18 +328,40 @@ public class GraalCompiler {
               FixedWithNextNode[] nodesToConnectCompressionLoopWithGraph = new FixedWithNextNode[numberOfArrays + 1];
               nodesToConnectCompressionLoopWithGraph[0] = (FixedWithNextNode) x;
 
+              // Fetch the connection for the end of the compression block
+              FixedNode connectAfterCompressionBlock = ((FixedWithNextNode) x).next();
+
+
               for (int compressEachArray = 0; compressEachArray < numberOfArrays; compressEachArray++) {
                 compressedArrayNodes[compressEachArray] = createCompressedArrayTransformation(graph, elementType,
                     st, nodesToConnectCompressionLoopWithGraph[compressEachArray], uncompressedArrayNodes[compressEachArray], constantMinus1, constant0, constant1);
                 //store the array you got to connect the next loop
                 nodesToConnectCompressionLoopWithGraph[compressEachArray + 1] = (FixedWithNextNode) compressedArrayNodes[compressEachArray][3];
               }
+
+              ((StoreIndexedNode) compressedArrayNodes[1][3]).setNext(connectAfterCompressionBlock);
               //Node numbers returned from the function inside the for loop above
               /*16*//*18*//*34*//*61*/
               /*64*//*66*//*82*//*108*/
 
+
+              // Fetch nodes to connect before the operation loop and after the time measurement loop
+
+              /*117*/
+              LoopBeginNode operationLoopBegNode = (LoopBeginNode) bindNodes.get(0);
+              FrameState stateOfOperationLoop = operationLoopBegNode.stateAfter().duplicate();
+
+              EndNode endBeforeLoop = null;
+              for(Node en: operationLoopBegNode.forwardEnds().snapshot()){
+                endBeforeLoop = (EndNode) en;
+              }
+
+
+              FixedWithNextNode addLoadIndexedBeforeThisNode = (FixedWithNextNode) endBeforeLoop.predecessor();
+
+
               LoadIndexedNode[][] loadValuesArraysForNextAndCurrent = new LoadIndexedNode[2][2];
-              FixedWithNextNode previousNodeOfGraphConnectedWithLoadIndBlock = (StoreIndexedNode) compressedArrayNodes[1][3];
+              FixedWithNextNode previousNodeOfGraphConnectedWithLoadIndBlock = addLoadIndexedBeforeThisNode;
 
               for (int fetchedAllArraysLoad = 0; fetchedAllArraysLoad < totalTimesToFetchLoadIndexed; fetchedAllArraysLoad++) {
                 for (int arrayFetched = 0; arrayFetched < numberOfArrays; arrayFetched++) {
@@ -348,15 +371,14 @@ public class GraalCompiler {
                 }
               }
 
+
+
               loadValuesArraysForNextAndCurrent[totalTimesToFetchLoadIndexed - 1][numberOfArrays - 1].setNext(endBeforeLoop);
 
               //Arrays initialized and used later for the automated creation
               ValuePhiNode[] finishArrayBooleans = new ValuePhiNode[numberOfArrays];
               AddNode[] increaseIterPointer = new AddNode[numberOfArrays];
 
-              /*117*/
-              LoopBeginNode operationLoopBegNode = (LoopBeginNode) bindNodes.get(0);
-              FrameState stateOfOperationLoop = operationLoopBegNode.stateAfter().duplicate();
 
               // An array of phi nodes to keep the iterationPointers that show to the start positions
               ValuePhiNode[] iterationPointers = new ValuePhiNode[numberOfArrays];
@@ -651,7 +673,10 @@ public class GraalCompiler {
               // TODO: Check the Phis and merges
 
             }),
-            new PatternNode(new EndNode()),
+//            new PatternNode(new EndNode()),
+            new AncestorNode(),
+            new PatternNode(new LoopBeginNode()),
+            new AncestorNode(),
             new PatternNode(new LoopBeginNode(), true),
             new PatternNode(new ArrayLengthNode(), true),
             new PatternNode(new IfNode()), new IndexNode(0),
@@ -667,6 +692,7 @@ public class GraalCompiler {
             new PatternNode(new LoadIndexedNode(), true),
             new PatternNode(new EndNode()),
             new PatternNode(new MergeNode()),
+//            new PatternNode(new InvokeNode()),// use it to stop the transformation
             new PatternNode(new LoopEndNode()));
         dataNode = null;
         lambdaCall = null;
@@ -1154,7 +1180,7 @@ public class GraalCompiler {
       return;
     }
     if (!(pattern[0].equals(incomingMatch.getClass()))) {
-      System.out.println("no match");
+//      System.out.println("no match");
       return;
     } else {
       // Add the incoming match in the bind nodes

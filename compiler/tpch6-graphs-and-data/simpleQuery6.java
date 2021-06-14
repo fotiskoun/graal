@@ -38,17 +38,22 @@ class simpleQuery6 {
   public static void loopIteration(int[] discount, int[] quantity) {
     declareToBeCompressedArrays(quantity, discount);
 
-    long sum =0;
-    for (int i = 0; i < discount.length; i++) {
-      if (quantity[i] <= 24) {
-        if (discount[i] <= 7) {
-          if (discount[i] >= 5) {
-            sum += discount[i];
+    long sum = 0;
+    long start = System.nanoTime();
+    for (int iter = 0; iter < 5; iter++) {
+      sum = 0;
+      for (int i = 0; i < discount.length; i++) {
+        if (quantity[i] <= 24) {
+          if (discount[i] <= 7) {
+            if (discount[i] >= 5) {
+              sum += discount[i];
+            }
           }
         }
       }
     }
-
+    long elapsedTime = System.nanoTime() - start;
+    System.out.println((elapsedTime / 1000000) + "  milliseconds");
     //1529278
     System.out.println("reve " + sum);
 

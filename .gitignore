@@ -1,6 +1,7 @@
 *~
 lineitem.tbl
 tpch6Sorted*.tbl
+ztest*.java
 *.aux
 *.bak
 *.bgv
