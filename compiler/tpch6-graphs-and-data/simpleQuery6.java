@@ -9,10 +9,11 @@ class simpleQuery6 {
   public static void main(String[] args) throws FileNotFoundException, ParseException, InterruptedException {
     File f = new File("./tpch6Accepted.tbl");
     Scanner scnr = new Scanner(f);
-    int rowsOftext = 113860;
+    int rowsOftext = 113860;//6001215;
     int[] discount = new int[rowsOftext];
     int[] quantity = new int[rowsOftext];
     int[] shipdate = new int[rowsOftext];
+    int[] extendedprice = new int[rowsOftext];
     SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 
     int i = 0;
@@ -23,6 +24,7 @@ class simpleQuery6 {
       discount[i] = (int) (Float.parseFloat(r[6]) * 100);
       quantity[i] = (int) Float.parseFloat(r[4]);
       shipdate[i] = (int) (formatter.parse(r[10]).getTime() / 1000);
+      extendedprice[i] = (int) (Float.parseFloat(r[5]) * 100);
 
       i++;
     }
@@ -34,14 +36,14 @@ class simpleQuery6 {
     int endDate = (int) (formatter.parse("1995-01-01").getTime() / 1000);
 
     for (; ; ) {
-      loopIteration(discount, quantity, shipdate, startDate, endDate);
+      loopIteration(discount, quantity, shipdate, extendedprice, startDate, endDate);
     }
   }
 
   public static void declareToBeCompressedArrays(int[]... arrays) {
   }
 
-  public static void loopIteration(int[] discount, int[] quantity, int[] shipdate, int startDate, int endDate) {
+  public static void loopIteration(int[] discount, int[] quantity, int[] shipdate, int[] extendedprice, int startDate, int endDate) {
     declareToBeCompressedArrays(quantity, discount);
 
     long sum = 0;
@@ -54,7 +56,7 @@ class simpleQuery6 {
             if (discount[i] >= 5) {
               if(shipdate[i] <= endDate){
                 if(shipdate[i] > startDate) {
-                  sum += discount[i];
+                  sum += (extendedprice[i] * discount[i]);
                 }
               }
             }
@@ -64,7 +66,7 @@ class simpleQuery6 {
     }
     long elapsedTime = System.nanoTime() - start;
     System.out.println((elapsedTime / 1000000) + "  milliseconds");
-    //1529278
+    //1529278  1228180570261
     System.out.println("reve " + sum);
 
   }

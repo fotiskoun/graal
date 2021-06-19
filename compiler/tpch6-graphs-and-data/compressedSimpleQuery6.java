@@ -10,10 +10,11 @@ class compressedSimpleQuery6 {
     File f = new File("./tpch6Accepted.tbl");/*tpch6Accepted*//*tpch6SortedLineitemDQSE70MB*/
     /*tpch6SortedLineitemDQSE*/
     Scanner scnr = new Scanner(f);
-    int rowsOftext = 6001215;
+    int rowsOftext = 113860;//6001215;
     int[] discount = new int[rowsOftext];
     int[] quantity = new int[rowsOftext];
     int[] shipdate = new int[rowsOftext];
+    int[] extendedprice = new int[rowsOftext];
     SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 
     int i = 0;
@@ -24,6 +25,7 @@ class compressedSimpleQuery6 {
       discount[i] = (int) (Float.parseFloat(r[6]) * 100);
       quantity[i] = (int) Float.parseFloat(r[4]);
       shipdate[i] = (int) (formatter.parse(r[10]).getTime() / 1000);
+      extendedprice[i] = (int) (Float.parseFloat(r[5]) * 100);
 
       i++;
     }
@@ -36,14 +38,14 @@ class compressedSimpleQuery6 {
     //throwing out the cache clearance loop
 
     for (; ; ) {
-      loopIteration(discount, quantity, shipdate, startDate, endDate);
+      loopIteration(discount, quantity, shipdate, extendedprice, startDate, endDate);
     }
   }
 
   public static void declareToBeCompressedArrays(int[]... arrays) {
   }
 
-  public static void loopIteration(int[] discount, int[] quantity, int[] shipdate, int startDate, int endDate) {
+  public static void loopIteration(int[] discount, int[] quantity, int[] shipdate, int[] extendedprice, int startDate, int endDate) {
     declareToBeCompressedArrays(quantity, discount, shipdate);
 
     //compress quantity Array
@@ -133,7 +135,7 @@ class compressedSimpleQuery6 {
               for (int inner_i = 0; inner_i < length; inner_i++) {
                 if (shipdate[inner_i + i] <= endDate) {
                   if (shipdate[inner_i + i] > startDate) {
-                    sum += currentDiscount;
+                    sum += extendedprice[inner_i + i] * currentDiscount;
                   }
                 }
               }

@@ -645,20 +645,30 @@ public class GraalCompiler {
 
 
               //Fetch the sum and SignExtend to use it in the Loop
-              /*old 88*/
+              /*old 87*/
               LoadIndexedNode loadForSum = (LoadIndexedNode) bindNodes.get(7);
+              /*old 88*/
+              LoadIndexedNode secondLoadForSum = (LoadIndexedNode) bindNodes.get(8);
 
-              /*287 old 89*/
-              SignExtendNode extendToFitSumLongVal = null;
+              /*289 old 89*/
+              MulNode priceMultiplicationForSum = null;
               for (Node n : loadForSum.usages().snapshot()) {
+                if (n instanceof MulNode) {
+                  priceMultiplicationForSum = (MulNode) n;
+                }
+              }
+
+              priceMultiplicationForSum.setX(currentArrayValues[1]);
+
+              /*290 old 90*/
+              SignExtendNode extendToFitSumLongVal = null;
+              for (Node n : priceMultiplicationForSum.usages().snapshot()) {
                 if (n instanceof SignExtendNode) {
                   extendToFitSumLongVal = (SignExtendNode) n;
                 }
               }
 
-              extendToFitSumLongVal.setValue(currentArrayValues[1]);
-
-              /*288 old 90*/
+              /*288 old 91*/
               AddNode addForSumValue = null;
               for (Node n : extendToFitSumLongVal.usages().snapshot()) {
                 if (n instanceof AddNode) {
@@ -720,54 +730,64 @@ public class GraalCompiler {
 
               LoadIndexedNode replaceLoadFirstUncomp = graph.add(new LoadIndexedNode(null, loadFirstUncompValue.array(), sumOfInnerAndOuterIterator, null, JavaKind.Int));
               begInnerLoop.setNext(replaceLoadFirstUncomp);
-              /*278 old 81*/
+              /*278 old 80*/
               IfNode nextNodeForFirstLoadCondition = (IfNode) loadFirstUncompValue.next();
               loadFirstUncompValue.setNext(null);
               replaceLoadFirstUncomp.setNext(nextNodeForFirstLoadCondition);
               loadFirstUncompValue.replaceAtUsagesAndDelete(replaceLoadFirstUncomp);
 
-              /*old 80*/
+              /*old 79*/
               BeginNode begTrueSuccAfterFirstLoadUncompCheck = (BeginNode) nextNodeForFirstLoadCondition.trueSuccessor();
 
-              /*old End to delete 79*/
+              /*old End to delete 78*/
               EndNode endOldTrueSuccessorAfterFirstLoad = (EndNode) begTrueSuccAfterFirstLoadUncompCheck.next();
 
               /*281*/
               EndNode endTrueSuccForSecondInnerLoopCondition = graph.addWithoutUnique(new EndNode());
               begTrueSuccAfterFirstLoadUncompCheck.setNext(endTrueSuccForSecondInnerLoopCondition);
 
-              /*old 82*/
+              /*old 81*/
               LoadIndexedNode loadSecondUncompValue = (LoadIndexedNode) bindNodes.get(6);
 
               /*279*/
               LoadIndexedNode replaceLoadSecondUncomp = graph.add(new LoadIndexedNode(null, loadSecondUncompValue.array(), sumOfInnerAndOuterIterator, null, JavaKind.Int));
               BeginNode begTrueSuccessorSecondLoad = (BeginNode) loadSecondUncompValue.predecessor();
               begTrueSuccessorSecondLoad.setNext(replaceLoadSecondUncomp);
-              /*286 old 87*/
+              /*286 old 86*/
               IfNode nextNodeForSecondLoad = (IfNode) loadSecondUncompValue.next();
               loadSecondUncompValue.setNext(null);
               replaceLoadSecondUncomp.setNext(nextNodeForSecondLoad);
               loadSecondUncompValue.replaceAtUsagesAndDelete(replaceLoadSecondUncomp);
 
-              /*284 old 85*/
+              /*284 old 84*/
               BeginNode begTrueSuccessorForLastPredicate = (BeginNode) nextNodeForSecondLoad.trueSuccessor();
               BeginNode begFalseSuccessorForLastPredicate = (BeginNode) nextNodeForSecondLoad.falseSuccessor();
 
-              /*old End to delete 84*/
+              /*old End to delete 83*/
               EndNode endFalseSuccessorForLastPredicate = (EndNode) begFalseSuccessorForLastPredicate.next();
 
               /*283*/
               EndNode replaceEndFalseSuccessorForLastPredicate = graph.addWithoutUnique(new EndNode());
               begFalseSuccessorForLastPredicate.setNext(replaceEndFalseSuccessorForLastPredicate);
 
-              /*old End to delete 91*/
-              EndNode endTrueSuccessorForLastPredicate = (EndNode) loadForSum.next();
+              /*old End to delete 92*/
+              EndNode endTrueSuccessorForLastPredicate = (EndNode) secondLoadForSum.next();
 
               /*289*/
               EndNode replaceEndTrueSuccessorForLastPredicate = graph.addWithoutUnique(new EndNode());
+
+
+              /*288 replace 87*/
+              LoadIndexedNode replaceLoadForSum = graph.add(new LoadIndexedNode(null, loadForSum.array(), sumOfInnerAndOuterIterator, null, JavaKind.Int));
+              begTrueSuccessorForLastPredicate.setNext(replaceLoadForSum);
+              priceMultiplicationForSum.setY(replaceLoadForSum);
+
+              secondLoadForSum.setNext(null);
               loadForSum.setNext(null);
-              begTrueSuccessorForLastPredicate.setNext(replaceEndTrueSuccessorForLastPredicate);
+              replaceLoadForSum.setNext(replaceEndTrueSuccessorForLastPredicate);
+              secondLoadForSum.safeDelete();
               loadForSum.safeDelete();
+
 
               /*282*/
               MergeNode mergeForInnerLoop = graph.add(new MergeNode());
@@ -794,10 +814,10 @@ public class GraalCompiler {
               EndNode endFalseSuccessorExitingInnerLoop = graph.addWithoutUnique(new EndNode());
               exitInnerLoop.setNext(endFalseSuccessorExitingInnerLoop);
 
-              /*old 65*/
-              MergeNode finalOperationLoop = (MergeNode) bindNodes.get(8);
+              /*old 63*/
+              MergeNode finalOperationLoop = (MergeNode) bindNodes.get(9);
 
-              /*old 92*/
+              /*old 93*/
               ValuePhiNode sumAfterFinalMerge = null;
               for (Node n : finalOperationLoop.usages().snapshot()) {
                 if (n instanceof ValuePhiNode) {
@@ -840,6 +860,7 @@ public class GraalCompiler {
             new PatternNode(new BeginNode()),
             new PatternNode(new LoadIndexedNode(), true),
             new AncestorNode(new LoopEndNode()),
+            new PatternNode(new LoadIndexedNode(), true),
             new PatternNode(new LoadIndexedNode(), true),
             new PatternNode(new EndNode()),
             new PatternNode(new MergeNode(), true),
