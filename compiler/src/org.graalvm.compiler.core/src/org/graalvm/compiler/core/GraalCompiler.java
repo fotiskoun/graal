@@ -347,12 +347,12 @@ public class GraalCompiler {
 
               // Fetch nodes to connect before the operation loop and after the time measurement loop
 
-              /*117*/
+              /*136*/
               LoopBeginNode operationLoopBegNode = (LoopBeginNode) bindNodes.get(0);
               FrameState stateOfOperationLoop = operationLoopBegNode.stateAfter().duplicate();
 
               EndNode endBeforeLoop = null;
-              for(Node en: operationLoopBegNode.forwardEnds().snapshot()){
+              for (Node en : operationLoopBegNode.forwardEnds().snapshot()) {
                 endBeforeLoop = (EndNode) en;
               }
 
@@ -372,7 +372,6 @@ public class GraalCompiler {
               }
 
 
-
               loadValuesArraysForNextAndCurrent[totalTimesToFetchLoadIndexed - 1][numberOfArrays - 1].setNext(endBeforeLoop);
 
               //Arrays initialized and used later for the automated creation
@@ -387,7 +386,7 @@ public class GraalCompiler {
                     new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
                 );
                 iterationPointers[iter].addInput(constant0);
-              }
+              } /*138 139*/
 
               // An array of phi nodes to keep the compressed values needed for this iteration
               ValuePhiNode[] currentArrayValues = new ValuePhiNode[numberOfArrays];
@@ -396,7 +395,7 @@ public class GraalCompiler {
                     new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
                 );
                 currentArrayValues[currentVal].addInput(loadValuesArraysForNextAndCurrent[0][currentVal]);
-              }
+              }/*140 141*/
 
               // An array of phi nodes to keep the compressed values fetched using the pointers for the next iteration
               ValuePhiNode[] nextArrayValues = new ValuePhiNode[numberOfArrays];
@@ -405,27 +404,27 @@ public class GraalCompiler {
                     new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
                 );
                 nextArrayValues[nextVal].addInput(loadValuesArraysForNextAndCurrent[1][nextVal]);
-              }
+              }/*142 143*/
 
-              /*125*/
+              /*144*/
               ValuePhiNode currentIteratorVal = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
               );
               currentIteratorVal.addInput(constant0);
 
-              /*126*/
+              /*145*/
               ValuePhiNode nextMinIteratorVal = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), operationLoopBegNode)
               );
               nextMinIteratorVal.addInput(constantMinus1);
 
-              /* old 31*/
+              /* old 53*/
               LoadIndexedNode loadForFirstPredicateToBeDeleted = (LoadIndexedNode) bindNodes.get(2);
 
-              /*144*/
+              /*163*/
               BeginNode startTheOperationLoop = (BeginNode) loadForFirstPredicateToBeDeleted.predecessor();
 
-              /*146*/
+              /*165*/
               IntegerEqualsNode conditionToCalculateMinIteratorFirArray = graph.addOrUnique(new IntegerEqualsNode((ValueProxyNode) compressedArrayNodes[0][2], iterationPointers[0]));
 
               BeginNode begFalseSuccCalculatingMinIterFirArray = graph.add(new BeginNode());
@@ -439,32 +438,32 @@ public class GraalCompiler {
               // Store it for use in next compressed values automation
               increaseIterPointer[0] = increaseFirArrIterPointer;
 
-              /*151*/
+              /*170*/
               LoadIndexedNode loadFirArrayNextStartPos = graph.add(new LoadIndexedNode(null, (NewArrayNode) compressedArrayNodes[0][1], increaseFirArrIterPointer, null, JavaKind.Int));
               begFalseSuccCalculatingMinIterFirArray.setNext(loadFirArrayNextStartPos);
 
-              /*152*/
+              /*171*/
               EndNode endTrueSuccessorCalculatingMinIterFirArr = graph.addWithoutUnique(new EndNode());
               begTrueSuccCalculatingMinIterFirArray.setNext(endTrueSuccessorCalculatingMinIterFirArr);
 
-              /*154*/
+              /*173*/
               EndNode endFalseSuccessorCalculatingMinIterFirArr = graph.addWithoutUnique(new EndNode());
               loadFirArrayNextStartPos.setNext(endFalseSuccessorCalculatingMinIterFirArr);
 
-              /*153*/
+              /*172*/
               MergeNode mergeCalculatingMinIterFirArraySuccessors = graph.add(new MergeNode());
               mergeCalculatingMinIterFirArraySuccessors.addForwardEnd(endTrueSuccessorCalculatingMinIterFirArr);
               mergeCalculatingMinIterFirArraySuccessors.addForwardEnd(endFalseSuccessorCalculatingMinIterFirArr);
               mergeCalculatingMinIterFirArraySuccessors.setStateAfter(stateOfOperationLoop);
 
-              /*155*/
+              /*174*/
               ValuePhiNode nextMinIteratorValForFirArrayMergeCalc = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), mergeCalculatingMinIterFirArraySuccessors)
               );
               nextMinIteratorValForFirArrayMergeCalc.addInput(nextMinIteratorVal);
               nextMinIteratorValForFirArrayMergeCalc.addInput(loadFirArrayNextStartPos);
 
-              /*156*/
+              /*175*/
               ValuePhiNode finishFirArrayBoolean = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), mergeCalculatingMinIterFirArraySuccessors)
               );
@@ -474,7 +473,7 @@ public class GraalCompiler {
               // Store it for use in next compressed values automation
               finishArrayBooleans[0] = finishFirArrayBoolean;
 
-              /*158*/
+              /*177*/
               IntegerEqualsNode conditionToCalculateMinIteratorSeconArray = graph.addOrUnique(new IntegerEqualsNode((ValueProxyNode) compressedArrayNodes[1][2], iterationPointers[1]));
 
               BeginNode begFalseSuccCalculatingMinIterSeconArray = graph.add(new BeginNode());
@@ -488,43 +487,43 @@ public class GraalCompiler {
               // Store it for use in next compressed values automation
               increaseIterPointer[1] = increaseSeconIterPointer;
 
-                  /*163*/
+              /*182*/
               LoadIndexedNode loadSeconArrayNextStartPos = graph.add(new LoadIndexedNode(null, (NewArrayNode) compressedArrayNodes[1][1], increaseSeconIterPointer, null, JavaKind.Int));
               begFalseSuccCalculatingMinIterSeconArray.setNext(loadSeconArrayNextStartPos);
 
               IntegerLessThanNode conditionSeconArrayStartPosAndMinIter = graph.addWithoutUnique(new IntegerLessThanNode(loadSeconArrayNextStartPos, nextMinIteratorValForFirArrayMergeCalc));
 
-              /*169*/
+              /*188*/
               BeginNode begTrueSuccForSeconArrayStartAndMinIter = graph.add(new BeginNode());
               BeginNode begFalseSuccForSeconArrayStartAndMinIter = graph.add(new BeginNode());
 
               IfNode seconArrayStartAndMinIterCondition = graph.add(new IfNode(conditionSeconArrayStartPosAndMinIter, begTrueSuccForSeconArrayStartAndMinIter, begFalseSuccForSeconArrayStartAndMinIter, 0.1));
               loadSeconArrayNextStartPos.setNext(seconArrayStartAndMinIterCondition);
 
-              /*172*/
+              /*191*/
               LoadIndexedNode seconArrayNextStartPosForAssignment = graph.add(new LoadIndexedNode(null, (NewArrayNode) compressedArrayNodes[1][1], increaseSeconIterPointer, null, JavaKind.Int));
               begTrueSuccForSeconArrayStartAndMinIter.setNext(seconArrayNextStartPosForAssignment);
 
-              /*165*/
+              /*184*/
               EndNode endTrueSuccCalculatingMinIterSeconArray = graph.addWithoutUnique(new EndNode());
               begTrueSuccCalculatingMinIterSeconArray.setNext(endTrueSuccCalculatingMinIterSeconArray);
 
-              /*167*/
+              /*186*/
               EndNode endFalseSuccForSeconArrayStartAndMinIter = graph.addWithoutUnique(new EndNode());
               begFalseSuccForSeconArrayStartAndMinIter.setNext(endFalseSuccForSeconArrayStartAndMinIter);
 
-              /*173*/
+              /*192*/
               EndNode endTrueSuccForSeconArrayStartAndMinIter = graph.addWithoutUnique(new EndNode());
               seconArrayNextStartPosForAssignment.setNext(endTrueSuccForSeconArrayStartAndMinIter);
 
-              /*166*/
+              /*185*/
               MergeNode seconArrayStartPosAndMinIterMerge = graph.add(new MergeNode());
               seconArrayStartPosAndMinIterMerge.addForwardEnd(endTrueSuccCalculatingMinIterSeconArray);
               seconArrayStartPosAndMinIterMerge.addForwardEnd(endFalseSuccForSeconArrayStartAndMinIter);
               seconArrayStartPosAndMinIterMerge.addForwardEnd(endTrueSuccForSeconArrayStartAndMinIter);
               seconArrayStartPosAndMinIterMerge.setStateAfter(stateOfOperationLoop);
 
-              /*168*/
+              /*187*/
               ValuePhiNode finishedSeconArrayBooleanAfterMerge = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), seconArrayStartPosAndMinIterMerge)
               );
@@ -535,7 +534,7 @@ public class GraalCompiler {
               // Store it for use in next compressed values automation
               finishArrayBooleans[1] = finishedSeconArrayBooleanAfterMerge;
 
-              /*174*/
+              /*193*/
               ValuePhiNode minNextIterAfterSeconArrAndMinIterMerge = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), seconArrayStartPosAndMinIterMerge)
               );
@@ -549,15 +548,15 @@ public class GraalCompiler {
               FixedWithNextNode connectNextCompressionValueWithGraph = seconArrayStartPosAndMinIterMerge;
 
 
-              for (int createNextCompressionValue = 0; createNextCompressionValue < numberOfArrays; createNextCompressionValue++){
+              for (int createNextCompressionValue = 0; createNextCompressionValue < numberOfArrays; createNextCompressionValue++) {
                 connectNextCompressionValueWithGraph = fetchTheNextCompressedValue(graph, stateOfOperationLoop, constant0,
                     connectNextCompressionValueWithGraph,
                     finishArrayBooleans[createNextCompressionValue], compressedArrayNodes[createNextCompressionValue],
                     increaseIterPointer[createNextCompressionValue], minNextIterAfterSeconArrAndMinIterMerge,
                     iterationPointers[createNextCompressionValue], nextArrayValues[createNextCompressionValue], currentArrayValues[createNextCompressionValue]);
-              }
+              } /*202*//*219*/
 
-              /*210*/
+              /*229*/
               IntegerEqualsNode conditionMinIterMinusOne = graph.addOrUnique(new IntegerEqualsNode(minNextIterAfterSeconArrAndMinIterMerge, constantMinus1));
 
               BeginNode begFalseMinIterMinusOne = graph.add(new BeginNode());
@@ -566,28 +565,28 @@ public class GraalCompiler {
               IfNode MinIterMinusOneCheck = graph.add(new IfNode(conditionMinIterMinusOne, begTrueMinIterMinusOne, begFalseMinIterMinusOne, 0.1));
               connectNextCompressionValueWithGraph.setNext(MinIterMinusOneCheck);
 
-              /*214*/
+              /*233*/
               ArrayLengthNode uncompArrayLengthForLastIteration = graph.add(new ArrayLengthNode(uncompressedArrayNodes[0]));
               begTrueMinIterMinusOne.setNext(uncompArrayLengthForLastIteration);
 
               SubNode lengthForLastPositionSubtraction = graph.addWithoutUnique(new SubNode(uncompArrayLengthForLastIteration, currentIteratorVal));
 
-              /*217*/
+              /*236*/
               SubNode lengthFromMinIterSubtraction = graph.addWithoutUnique(new SubNode(minNextIterAfterSeconArrAndMinIterMerge, currentIteratorVal));
 
               EndNode endTrueMinIterMinusOne = graph.addWithoutUnique(new EndNode());
               uncompArrayLengthForLastIteration.setNext(endTrueMinIterMinusOne);
-              /*220*/
+              /*239*/
               EndNode endFalseMinIterMinusOne = graph.addWithoutUnique(new EndNode());
               begFalseMinIterMinusOne.setNext(endFalseMinIterMinusOne);
 
-              /*219*/
+              /*238*/
               MergeNode mergeForLength = graph.add(new MergeNode());
               mergeForLength.addForwardEnd(endTrueMinIterMinusOne);
               mergeForLength.addForwardEnd(endFalseMinIterMinusOne);
               mergeForLength.setStateAfter(stateOfOperationLoop);
 
-              /*221*/
+              /*240*/
               ValuePhiNode lengthBetweenAlignments = graph.addWithoutUnique(
                   new ValuePhiNode(StampFactory.forInteger(32), mergeForLength)
               );
@@ -598,7 +597,7 @@ public class GraalCompiler {
               // get the iterator increase (AddIntegerNode) to change the increasing value
 
               //Integer less than node which checks the insertion inside the operation loop
-              /*130 old 23*/
+              /*149 old 45*/
               IntegerLessThanNode conditionArrayIterationComparison = null;
               for (Node n : alOfShip.usages().snapshot()) {
                 if (n instanceof IntegerLessThanNode) {
@@ -606,9 +605,9 @@ public class GraalCompiler {
                 }
               }
 
-              //Iterator of the Loop 127 old 20
+              //Iterator of the Loop 146 old 42
               ValuePhiNode iteratorInOperationLoop = (ValuePhiNode) conditionArrayIterationComparison.getX();
-              /*243 old 61*/
+              /*294 old 94*/
               AddNode iteratorIncrease = null;
               for (Node n : iteratorInOperationLoop.inputs().snapshot()) {
                 if (n instanceof AddNode) {
@@ -624,9 +623,6 @@ public class GraalCompiler {
 
               FixedWithNextNode connectWithPreviousGraph = mergeForLength;
 
-              // TODO: this will be replaced by the phis array creation on top
-              ValuePhiNode[] currentValuesForArrays = new ValuePhiNode[]{currentArrayValues[0], currentArrayValues[1]};
-
               for (int predicateLoad = 0; predicateLoad < numberOfPredicates; predicateLoad++) {
                 // Match the LoadIndexed in the predicate with the Array Parameters to locate the correct phi Node
                 int arrayAndLoadMatch = -1;
@@ -640,20 +636,19 @@ public class GraalCompiler {
 
                 // Use this if in case a predicate does not come from a compressed array
                 if (arrayAndLoadMatch > -1) {
-                  replaceTheLoadIndexed(graph, (LoadIndexedNode) bindNodes.get(2 + predicateLoad), currentValuesForArrays[arrayAndLoadMatch], connectWithPreviousGraph);
+                  replaceTheLoadIndexed(graph, (LoadIndexedNode) bindNodes.get(2 + predicateLoad), currentArrayValues[arrayAndLoadMatch], connectWithPreviousGraph);
                   if (predicateLoad < numberOfPredicates - 1) {
                     connectWithPreviousGraph = (FixedWithNextNode) bindNodes.get(2 + predicateLoad + 1).predecessor();
                   }
                 }
               }
 
-              /*old 55*/
-              LoadIndexedNode loadForSum = (LoadIndexedNode) bindNodes.get(5);
 
-              BeginNode begFalseSuccForArraySum = (BeginNode) loadForSum.predecessor();
-              EndNode endFalseSuccForArraySum = (EndNode) loadForSum.next();
+              //Fetch the sum and SignExtend to use it in the Loop
+              /*old 88*/
+              LoadIndexedNode loadForSum = (LoadIndexedNode) bindNodes.get(7);
 
-              /*241 old 56*/
+              /*287 old 89*/
               SignExtendNode extendToFitSumLongVal = null;
               for (Node n : loadForSum.usages().snapshot()) {
                 if (n instanceof SignExtendNode) {
@@ -661,16 +656,166 @@ public class GraalCompiler {
                 }
               }
 
-              /*240*/ // TODO: When the full tpch 6 query built this needs to be changed
-              MulNode runTimesLength = graph.addOrUnique(new MulNode(currentArrayValues[1], lengthBetweenAlignments));
+              extendToFitSumLongVal.setValue(currentArrayValues[1]);
 
-              extendToFitSumLongVal.setValue(runTimesLength);
+              /*288 old 90*/
+              AddNode addForSumValue = null;
+              for (Node n : extendToFitSumLongVal.usages().snapshot()) {
+                if (n instanceof AddNode) {
+                  addForSumValue = (AddNode) n;
+                }
+              }
 
+              /*old 41*/
+              ValuePhiNode sumValue = (ValuePhiNode) addForSumValue.getX();
+
+              // Create the new Loop Node to iterate the uncompressed arrays
+              LoadIndexedNode loadFirstUncompValue = (LoadIndexedNode) bindNodes.get(5);
+              BeginNode begForFirstUncompressedLoad = (BeginNode) loadFirstUncompValue.predecessor();
+              /*260*/
+              EndNode endBeforeUncompressedInnerOpLoop = graph.addWithoutUnique(new EndNode());
+              begForFirstUncompressedLoad.setNext(endBeforeUncompressedInnerOpLoop);
+
+              LoopBeginNode beginUncompressedInnerLoop = graph.add(new LoopBeginNode());
+              beginUncompressedInnerLoop.addForwardEnd(endBeforeUncompressedInnerOpLoop);
+              beginUncompressedInnerLoop.setStateAfter(stateOfOperationLoop);
+
+              /*262*/
+              ValuePhiNode sumForInnerLoop = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(64), beginUncompressedInnerLoop)
+              );
+              sumForInnerLoop.addInput(sumValue);
+              addForSumValue.setX(sumForInnerLoop);
+
+              /*263*/
+              ValuePhiNode innerLoopIterator = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(32), beginUncompressedInnerLoop)
+              );
+              innerLoopIterator.addInput(constant0);
+
+              /*292*/
+              AddNode increaseInnerLoopIterator = graph.addWithoutUnique(new AddNode(innerLoopIterator, constant1));
+
+              innerLoopIterator.addInput(increaseInnerLoopIterator);
+
+
+              /*265*/
+              IntegerLessThanNode conditionForInnerLoop = graph.addWithoutUnique(new IntegerLessThanNode(innerLoopIterator, lengthBetweenAlignments));
+
+              /*267*/
+              LoopExitNode exitInnerLoop = graph.add(new LoopExitNode(beginUncompressedInnerLoop));
+              exitInnerLoop.setStateAfter(stateOfOperationLoop);
+
+              /*268*/
+              ValueProxyNode sendSumFromInnerLoop = graph.addOrUnique(new ValueProxyNode(sumForInnerLoop, exitInnerLoop));
+
+
+              /*271*/
+              BeginNode begInnerLoop = graph.add(new BeginNode());
+
+              IfNode innerLoopEntryCheck = graph.add(new IfNode(conditionForInnerLoop, begInnerLoop, exitInnerLoop, 0.9));
+              beginUncompressedInnerLoop.setNext(innerLoopEntryCheck);
+
+              AddNode sumOfInnerAndOuterIterator = graph.addWithoutUnique(new AddNode(iteratorInOperationLoop, innerLoopIterator));
+
+              LoadIndexedNode replaceLoadFirstUncomp = graph.add(new LoadIndexedNode(null, loadFirstUncompValue.array(), sumOfInnerAndOuterIterator, null, JavaKind.Int));
+              begInnerLoop.setNext(replaceLoadFirstUncomp);
+              /*278 old 81*/
+              IfNode nextNodeForFirstLoadCondition = (IfNode) loadFirstUncompValue.next();
+              loadFirstUncompValue.setNext(null);
+              replaceLoadFirstUncomp.setNext(nextNodeForFirstLoadCondition);
+              loadFirstUncompValue.replaceAtUsagesAndDelete(replaceLoadFirstUncomp);
+
+              /*old 80*/
+              BeginNode begTrueSuccAfterFirstLoadUncompCheck = (BeginNode) nextNodeForFirstLoadCondition.trueSuccessor();
+
+              /*old End to delete 79*/
+              EndNode endOldTrueSuccessorAfterFirstLoad = (EndNode) begTrueSuccAfterFirstLoadUncompCheck.next();
+
+              /*281*/
+              EndNode endTrueSuccForSecondInnerLoopCondition = graph.addWithoutUnique(new EndNode());
+              begTrueSuccAfterFirstLoadUncompCheck.setNext(endTrueSuccForSecondInnerLoopCondition);
+
+              /*old 82*/
+              LoadIndexedNode loadSecondUncompValue = (LoadIndexedNode) bindNodes.get(6);
+
+              /*279*/
+              LoadIndexedNode replaceLoadSecondUncomp = graph.add(new LoadIndexedNode(null, loadSecondUncompValue.array(), sumOfInnerAndOuterIterator, null, JavaKind.Int));
+              BeginNode begTrueSuccessorSecondLoad = (BeginNode) loadSecondUncompValue.predecessor();
+              begTrueSuccessorSecondLoad.setNext(replaceLoadSecondUncomp);
+              /*286 old 87*/
+              IfNode nextNodeForSecondLoad = (IfNode) loadSecondUncompValue.next();
+              loadSecondUncompValue.setNext(null);
+              replaceLoadSecondUncomp.setNext(nextNodeForSecondLoad);
+              loadSecondUncompValue.replaceAtUsagesAndDelete(replaceLoadSecondUncomp);
+
+              /*284 old 85*/
+              BeginNode begTrueSuccessorForLastPredicate = (BeginNode) nextNodeForSecondLoad.trueSuccessor();
+              BeginNode begFalseSuccessorForLastPredicate = (BeginNode) nextNodeForSecondLoad.falseSuccessor();
+
+              /*old End to delete 84*/
+              EndNode endFalseSuccessorForLastPredicate = (EndNode) begFalseSuccessorForLastPredicate.next();
+
+              /*283*/
+              EndNode replaceEndFalseSuccessorForLastPredicate = graph.addWithoutUnique(new EndNode());
+              begFalseSuccessorForLastPredicate.setNext(replaceEndFalseSuccessorForLastPredicate);
+
+              /*old End to delete 91*/
+              EndNode endTrueSuccessorForLastPredicate = (EndNode) loadForSum.next();
+
+              /*289*/
+              EndNode replaceEndTrueSuccessorForLastPredicate = graph.addWithoutUnique(new EndNode());
               loadForSum.setNext(null);
-              begFalseSuccForArraySum.setNext(endFalseSuccForArraySum);
+              begTrueSuccessorForLastPredicate.setNext(replaceEndTrueSuccessorForLastPredicate);
               loadForSum.safeDelete();
 
-              // TODO: Check the Phis and merges
+              /*282*/
+              MergeNode mergeForInnerLoop = graph.add(new MergeNode());
+              mergeForInnerLoop.addForwardEnd(endTrueSuccForSecondInnerLoopCondition);
+              mergeForInnerLoop.addForwardEnd(replaceEndFalseSuccessorForLastPredicate);
+              mergeForInnerLoop.addForwardEnd(replaceEndTrueSuccessorForLastPredicate);
+              mergeForInnerLoop.setStateAfter(stateOfOperationLoop);
+
+              /*293*/
+              LoopEndNode endInnerLoop = graph.add(new LoopEndNode(beginUncompressedInnerLoop));
+              mergeForInnerLoop.setNext(endInnerLoop);
+
+              /*290*/
+              ValuePhiNode sumAfterMergeForInnerLoop = graph.addWithoutUnique(
+                  new ValuePhiNode(StampFactory.forInteger(64), mergeForInnerLoop)
+              );
+              sumAfterMergeForInnerLoop.addInput(sumForInnerLoop);
+              sumAfterMergeForInnerLoop.addInput(sumForInnerLoop);
+              sumAfterMergeForInnerLoop.addInput(addForSumValue);
+
+              sumForInnerLoop.addInput(sumAfterMergeForInnerLoop);
+
+              /*296*/
+              EndNode endFalseSuccessorExitingInnerLoop = graph.addWithoutUnique(new EndNode());
+              exitInnerLoop.setNext(endFalseSuccessorExitingInnerLoop);
+
+              /*old 65*/
+              MergeNode finalOperationLoop = (MergeNode) bindNodes.get(8);
+
+              /*old 92*/
+              ValuePhiNode sumAfterFinalMerge = null;
+              for (Node n : finalOperationLoop.usages().snapshot()) {
+                if (n instanceof ValuePhiNode) {
+                  sumAfterFinalMerge = (ValuePhiNode) n;
+                }
+              }
+
+              finalOperationLoop.removeEnd(endOldTrueSuccessorAfterFirstLoad);
+              finalOperationLoop.removeEnd(endFalseSuccessorForLastPredicate);
+              finalOperationLoop.removeEnd(endTrueSuccessorForLastPredicate);
+
+              finalOperationLoop.addForwardEnd(endFalseSuccessorExitingInnerLoop);
+              sumAfterFinalMerge.addInput(sendSumFromInnerLoop);
+
+              // Need to delete the hanging EndNodes
+              endOldTrueSuccessorAfterFirstLoad.safeDelete();
+              endFalseSuccessorForLastPredicate.safeDelete();
+              endTrueSuccessorForLastPredicate.safeDelete();
 
             }),
 //            new PatternNode(new EndNode()),
@@ -688,10 +833,16 @@ public class GraalCompiler {
             new PatternNode(new IfNode()), new IndexNode(0),
             new PatternNode(new BeginNode()),
             new PatternNode(new LoadIndexedNode(), true),
+            new PatternNode(new IfNode()), new IndexNode(1),
+            new PatternNode(new BeginNode()),
+            new PatternNode(new LoadIndexedNode(), true),
+            new PatternNode(new IfNode()), new IndexNode(1),
+            new PatternNode(new BeginNode()),
+            new PatternNode(new LoadIndexedNode(), true),
             new AncestorNode(new LoopEndNode()),
             new PatternNode(new LoadIndexedNode(), true),
             new PatternNode(new EndNode()),
-            new PatternNode(new MergeNode()),
+            new PatternNode(new MergeNode(), true),
 //            new PatternNode(new InvokeNode()),// use it to stop the transformation
             new PatternNode(new LoopEndNode()));
         dataNode = null;
@@ -746,7 +897,7 @@ public class GraalCompiler {
                                                               ValuePhiNode iterationPointers,
                                                               ValuePhiNode nextArrayValues,
                                                               ValuePhiNode currentArrayValues) {
-    /*176*//*193*/
+    /*195*//*212*/
     IntegerEqualsNode conditionHasFinishedFirArray = graph.addOrUnique(new IntegerEqualsNode(finishedArrayBoolean, constant0));
 
     BeginNode begFalseHasFinishedFirArray = graph.add(new BeginNode());
@@ -755,43 +906,43 @@ public class GraalCompiler {
     IfNode hasFinishedFirArrayCheck = graph.add(new IfNode(conditionHasFinishedFirArray, begTrueHasFinishedFirArray, begFalseHasFinishedFirArray, 0.9));
     connectWithPreviousGraph.setNext(hasFinishedFirArrayCheck);
 
-    /*180*//*197*/
+    /*199*//*216*/
     LoadIndexedNode loadFirArrNextPosForCondition = graph.add(new LoadIndexedNode(null, (NewArrayNode) compressedArrayRunAndPos[1], increaseArrayPointer, null, JavaKind.Int));
     begTrueHasFinishedFirArray.setNext(loadFirArrNextPosForCondition);
 
     IntegerEqualsNode checkFirArrNextPosAndMinIter = graph.addOrUnique(new IntegerEqualsNode(minIteratorFromLastUpdatedMerge, loadFirArrNextPosForCondition));
 
-    /*185*//*202*/
+    /*204*//*221*/
     BeginNode begTrueFirArrNextPosAndMinIter = graph.add(new BeginNode());
     BeginNode begFalseFirArrNextPosAndMinIter = graph.add(new BeginNode());
 
     IfNode firArrNextPosAndMinIterCondition = graph.add(new IfNode(checkFirArrNextPosAndMinIter, begTrueFirArrNextPosAndMinIter, begFalseFirArrNextPosAndMinIter, 0.9));
     loadFirArrNextPosForCondition.setNext(firArrNextPosAndMinIterCondition);
 
-    /*188*//*205*/
+    /*207*//*224*/
     LoadIndexedNode loadFirRunArrForAssignment = graph.add(new LoadIndexedNode(null, (NewArrayNode) compressedArrayRunAndPos[0], increaseArrayPointer, null, JavaKind.Int));
     begTrueFirArrNextPosAndMinIter.setNext(loadFirRunArrForAssignment);
 
-    /*182*//*199*/
+    /*201*//*218*/
     EndNode endFalseHasFinishedFirArray = graph.addWithoutUnique(new EndNode());
     begFalseHasFinishedFirArray.setNext(endFalseHasFinishedFirArray);
 
-    /*184*//*201*/
+    /*203*//*220*/
     EndNode endFalseFirArrNextPosAndMinIter = graph.addWithoutUnique(new EndNode());
     begFalseFirArrNextPosAndMinIter.setNext(endFalseFirArrNextPosAndMinIter);
 
-    /*189*//*206*/
+    /*208*//*225*/
     EndNode endTrueFirArrNextPosAndMinIter = graph.addWithoutUnique(new EndNode());
     loadFirRunArrForAssignment.setNext(endTrueFirArrNextPosAndMinIter);
 
-    /*183*//*200*/
+    /*202*//*219*/
     MergeNode mergeFirArrayNextRunAssignment = graph.add(new MergeNode());
     mergeFirArrayNextRunAssignment.addForwardEnd(endFalseHasFinishedFirArray);
     mergeFirArrayNextRunAssignment.addForwardEnd(endFalseFirArrNextPosAndMinIter);
     mergeFirArrayNextRunAssignment.addForwardEnd(endTrueFirArrNextPosAndMinIter);
     mergeFirArrayNextRunAssignment.setStateAfter(state);
 
-    /*190*//*207*/
+    /*209*//*226*/
     ValuePhiNode iterationPointerForFirArrayAfterNextRunAssignmentMerge = graph.addWithoutUnique(
         new ValuePhiNode(StampFactory.forInteger(32), mergeFirArrayNextRunAssignment)
     );
@@ -801,7 +952,7 @@ public class GraalCompiler {
 
     iterationPointers.addInput(iterationPointerForFirArrayAfterNextRunAssignmentMerge);
 
-    /*191*//*208*/
+    /*210*//*227*/
     ValuePhiNode nextValForFirArrayAfterNextRunAssignmentMerge = graph.addWithoutUnique(
         new ValuePhiNode(StampFactory.forInteger(32), mergeFirArrayNextRunAssignment)
     );

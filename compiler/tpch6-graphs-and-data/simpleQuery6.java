@@ -9,9 +9,11 @@ class simpleQuery6 {
   public static void main(String[] args) throws FileNotFoundException, ParseException, InterruptedException {
     File f = new File("./tpch6Accepted.tbl");
     Scanner scnr = new Scanner(f);
-    int rowsOftext = 600572;
+    int rowsOftext = 113860;
     int[] discount = new int[rowsOftext];
     int[] quantity = new int[rowsOftext];
+    int[] shipdate = new int[rowsOftext];
+    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 
     int i = 0;
     while (scnr.hasNextLine() && i < rowsOftext) {
@@ -20,6 +22,7 @@ class simpleQuery6 {
 
       discount[i] = (int) (Float.parseFloat(r[6]) * 100);
       quantity[i] = (int) Float.parseFloat(r[4]);
+      shipdate[i] = (int) (formatter.parse(r[10]).getTime() / 1000);
 
       i++;
     }
@@ -27,26 +30,33 @@ class simpleQuery6 {
     //filling the arrays before the loop iteration
     //throwing out the cache clearance loop
 
+    int startDate = (int) (formatter.parse("1994-01-01").getTime() / 1000);
+    int endDate = (int) (formatter.parse("1995-01-01").getTime() / 1000);
+
     for (; ; ) {
-      loopIteration(discount, quantity);
+      loopIteration(discount, quantity, shipdate, startDate, endDate);
     }
   }
 
   public static void declareToBeCompressedArrays(int[]... arrays) {
   }
 
-  public static void loopIteration(int[] discount, int[] quantity) {
+  public static void loopIteration(int[] discount, int[] quantity, int[] shipdate, int startDate, int endDate) {
     declareToBeCompressedArrays(quantity, discount);
 
     long sum = 0;
     long start = System.nanoTime();
-    for (int iter = 0; iter < 5; iter++) {
+    for (int iter = 0; iter < 50; iter++) {
       sum = 0;
       for (int i = 0; i < discount.length; i++) {
         if (quantity[i] <= 24) {
           if (discount[i] <= 7) {
             if (discount[i] >= 5) {
-              sum += discount[i];
+              if(shipdate[i] <= endDate){
+                if(shipdate[i] > startDate) {
+                  sum += discount[i];
+                }
+              }
             }
           }
         }
