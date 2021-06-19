@@ -8,10 +8,13 @@ import java.util.Scanner;
 class compressedSimpleQuery6 {
   public static void main(String[] args) throws FileNotFoundException, ParseException, InterruptedException {
     File f = new File("./tpch6Accepted.tbl");/*tpch6Accepted*//*tpch6SortedLineitemDQSE70MB*/
+    /*tpch6SortedLineitemDQSE*/
     Scanner scnr = new Scanner(f);
-    int rowsOftext = 600572;
+    int rowsOftext = 6001215;
     int[] discount = new int[rowsOftext];
     int[] quantity = new int[rowsOftext];
+    int[] shipdate = new int[rowsOftext];
+    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
 
     int i = 0;
     while (scnr.hasNextLine() && i < rowsOftext) {
@@ -20,23 +23,28 @@ class compressedSimpleQuery6 {
 
       discount[i] = (int) (Float.parseFloat(r[6]) * 100);
       quantity[i] = (int) Float.parseFloat(r[4]);
+      shipdate[i] = (int) (formatter.parse(r[10]).getTime() / 1000);
 
       i++;
     }
+
+    int startDate = (int) (formatter.parse("1994-01-01").getTime() / 1000);
+    int endDate = (int) (formatter.parse("1995-01-01").getTime() / 1000);
+
 
     //filling the arrays before the loop iteration
     //throwing out the cache clearance loop
 
     for (; ; ) {
-      loopIteration(discount, quantity);
+      loopIteration(discount, quantity, shipdate, startDate, endDate);
     }
   }
 
   public static void declareToBeCompressedArrays(int[]... arrays) {
   }
 
-  public static void loopIteration(int[] discount, int[] quantity) {
-    declareToBeCompressedArrays(quantity, discount);
+  public static void loopIteration(int[] discount, int[] quantity, int[] shipdate, int startDate, int endDate) {
+    declareToBeCompressedArrays(quantity, discount, shipdate);
 
     //compress quantity Array
     int[] compressedQuanRun = new int[quantity.length];
@@ -66,31 +74,28 @@ class compressedSimpleQuery6 {
         compDisRaw++;
       }
     }
-    //to grab the end position
-    startDisPosition[compDisRaw] = discount.length;
-
 
     long sum = 0;/*118*/
     long start = System.nanoTime();
-    for (int iter = 0; iter < 5; iter++) {
-      sum = 0;
+    for (int iter = 0; iter < 50; iter++) {
+      sum = 0;/*137*/
       // iterators to show in the startPosition arrays
-      int quanIterPointer = 0;/*119*/
-      int discIterPointer = 0;/*120*/
+      int quanIterPointer = 0;/*138*/
+      int discIterPointer = 0;/*139*/
       // the current values from the compressed arrays
-      int currentQuantity = compressedQuanRun[0];/*121*/
-      int currentDiscount = compressedDisRun[0];/*122*/
+      int currentQuantity = compressedQuanRun[0];/*140*/
+      int currentDiscount = compressedDisRun[0];/*141*/
       //the next value from the compressed arrays
-      int nextQuantity = compressedQuanRun[0];/*123*/
-      int nextDiscount = compressedDisRun[0];/*124*/
+      int nextQuantity = compressedQuanRun[0];/*142*/
+      int nextDiscount = compressedDisRun[0];/*143*/
       // keep the last iterator
-      int iteratorPointer = 0;/*125*/
+      int iteratorPointer = 0;/*144*/
       // the next minimum iterator between the arrays
-      int minNextIterator = -1;/*126*/
+      int minNextIterator = -1;/*145*/
       int length;
 
 
-      /*i = 127*/
+      /*i = 146*/
       for (int i = 0; i < discount.length; ) {
         boolean hasFinishedQuantity = true;
         boolean hasFinishedDiscount = true;
@@ -125,7 +130,13 @@ class compressedSimpleQuery6 {
         if (currentQuantity <= 24) {
           if (currentDiscount <= 7) {
             if (currentDiscount >= 5) {
-              sum += currentDiscount * length;
+              for (int inner_i = 0; inner_i < length; inner_i++) {
+                if (shipdate[inner_i + i] <= endDate) {
+                  if (shipdate[inner_i + i] > startDate) {
+                    sum += currentDiscount;
+                  }
+                }
+              }
               i += length;
             } else i += length;
           } else i += length;
@@ -135,6 +146,7 @@ class compressedSimpleQuery6 {
         iteratorPointer = minNextIterator;
       }
     }
+
     long elapsedTime = System.nanoTime() - start;
     System.out.println((elapsedTime / 1000000) + "  milliseconds");
 
